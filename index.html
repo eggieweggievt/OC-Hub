@@ -157,6 +157,27 @@
   .gal-thumb{aspect-ratio:1;background:#f1e9fa center/cover no-repeat;display:grid;place-items:center;font-size:24px;cursor:zoom-in;}
   .gal-body{padding:7px 9px;display:flex;flex-direction:column;gap:2px;}
   .oc-quote{font-family:var(--display);font-size:14px;color:var(--lav-deep);font-style:italic;margin-top:6px;}
+  /* ---- discord-style profile hero ---- */
+  .oc-hero{position:relative;border-radius:var(--r) var(--r) 0 0;overflow:visible;margin:-16px -16px 0;}
+  .oc-hero-banner{height:190px;border-radius:var(--r) var(--r) 0 0;background-size:cover;background-position:center;}
+  .oc-hero-ava{position:absolute;left:20px;bottom:-34px;border:5px solid #fff;border-radius:999px;box-shadow:var(--shadow-sm);}
+  .oc-hero-ava .oc-ava{display:grid;}
+  .oc-hero-body{padding:44px 4px 0;}
+  @media(max-width:700px){.oc-hero-banner{height:130px;}}
+  /* ---- D&D-style character sheet editor ---- */
+  .sheet{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:18px;}
+  .sheet-box{border:2px solid var(--line-2);border-radius:14px;padding:18px 14px 14px;position:relative;background:rgba(255,255,255,.92);}
+  .sheet-box>h4{position:absolute;top:-9px;left:14px;margin:0;background:#fff;padding:0 9px;font-family:var(--display);letter-spacing:.14em;font-size:11px;color:var(--lav-deep);text-transform:uppercase;border-radius:6px;}
+  .sheet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;}
+  .stat-box{border:2px solid var(--line-2);border-radius:12px;padding:8px 6px 6px;text-align:center;background:#fff;}
+  .stat-box .label{display:block;margin-bottom:3px;}
+  .stat-box input{width:64px;border:none;outline:none;text-align:center;font-family:var(--display);font-size:26px;color:var(--pink-deep);background:none;}
+  .stat-box .st-stars{font-size:12px;color:var(--lav);letter-spacing:2px;min-height:16px;}
+  .sheet-port{width:130px;height:130px;border-radius:999px;border:3px dashed var(--line-2);background:#fdf8fe center/cover no-repeat;display:grid;place-items:center;color:var(--muted);font-size:12px;cursor:pointer;text-align:center;flex:0 0 auto;}
+  .sheet-banner{height:110px;border-radius:12px;border:3px dashed var(--line-2);background:#fdf8fe center/cover no-repeat;display:grid;place-items:center;color:var(--muted);font-size:12px;cursor:pointer;}
+  /* ---- my designs ---- */
+  .dg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;}
+  .dg-thumb{aspect-ratio:1;background:#f1e9fa center/cover no-repeat;display:grid;place-items:center;font-size:26px;border-radius:12px 12px 0 0;}
   .fact-row{display:flex;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px dashed var(--line);font-size:12.5px;}
   .fact-row b{flex:0 0 110px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
   /* ---- freeform ref board (per character) ---- */
@@ -225,6 +246,9 @@
 <input type="file" id="mbFile" accept="image/*" multiple style="display:none" />
 <input type="file" id="galFile" accept="image/*" multiple style="display:none" />
 <input type="file" id="pfpFile" accept="image/*" style="display:none" />
+<input type="file" id="sheetPfpFile" accept="image/*" style="display:none" />
+<input type="file" id="sheetBannerFile" accept="image/*" style="display:none" />
+<input type="file" id="dgFile" accept="image/*" style="display:none" />
 
 <script>
 "use strict";
@@ -268,7 +292,7 @@ demo.days[SENTINEL] = {
       palette:["#f9b8d8","#bcd9f7","#cdbdf2","#f7e6b0"],
       summary:"A pastel patissier unicorn who bakes feelings into cakes. Sweet on the outside, surprisingly stubborn underneath the frosting.",
       voice:"Soft-spoken, lots of food metaphors, says \"oh crumbs\" when flustered.",
-      quote:"every feeling deserves frosting", adjectives:["soft","stubborn","sweet"], rpStatus:"open",
+      quote:"every feeling deserves frosting", adjectives:["soft","stubborn","sweet"], rpStatus:"open", banner:"design_03.png",
       nickname:"Pep", gender:"unicorn girl", origin:"the Sugarveil Market", age:"looks 19, is actually a century-old sourdough starter of a soul", birthday:"March 3", zodiac:"Pisces", height:"5'2\" (horn adds 4 inches)", orientation:"demiromantic", occupation:"patissier at the Sugarveil Market", alignment:"chaotic cozy",
       stats:{str:2,dex:3,con:2,int:3,wis:2,cha:5},
       esoterica:{sign:"Pisces",card:"The Star",gem:"rose quartz",element:"sugar (honorary)",tn:"",god:"the Oven Eternal"},
@@ -304,6 +328,9 @@ demo.days[SENTINEL] = {
   ],
   ocIdeas:[ {id:"i1",text:"Pep's horn glows when she lies — she is a terrible liar",added:"2026-06-01"}, {id:"i2",text:"scene: rainy day at the stall, juniper 'happens' to walk by",added:"2026-06-02"} ],
   ocInspo:[ {id:"v1",url:"https://coolors.co/",note:"palette tool",done:false,added:"2026-06-01"} ],
+  ocRpInfo:{ body:"Semi-literate to literate · replies within a few days · fade-to-black only · no permanent character death without discussion 💗", starters:"bakery meet-cutes · rivals stuck sharing one umbrella · found-family road trips" },
+  ocJournals:[ {id:"j1",date:"2026-06-01",title:"Pep finally yelled at someone",ocIds:["oc1"],body:"RP recap: she defended Juniper's scones to a rude customer and then was embarrassed about it for three in-game days. Growth!"} ],
+  ocDesigns:[ {id:"d1",name:"moth librarian (unnamed)",status:"keep",designer:"@somebody",price:"$25",notes:"bought on impulse, zero regrets. needs a name and a tragic backstory."} ],
   ocStickies:[], ocLayouts:{},
 };
 
@@ -331,10 +358,10 @@ function mergeCfg(o){ if(!o)return; if(o.mainOs)CONFIG.mainOs=o.mainOs; if(o.cre
 
 /* ===================== STATE + ROUTER ===================== */
 const ICO=f=>`<img class="ti" src="${f}" alt="">`;
-const TABS=[["home","🏠 Home"],["chars",ICO("7330-member.png")+"Characters"],["gallery",ICO("35911-pinkbow.png")+"Gallery"],["lore",ICO("463880-pinkemojistaff.png")+"Lore"],["arcs",ICO("29335-pinkemojistaff.png")+"Story arcs"],["ships",ICO("674881-pinkletterwings.png")+"Ships"],["ideas",ICO("940895-pinkemojistaff.png")+"Ideas"],["settings","⚙️ Settings"]];
+const TABS=[["home","🏠 Home"],["chars",ICO("7330-member.png")+"Characters"],["gallery",ICO("35911-pinkbow.png")+"Gallery"],["lore",ICO("463880-pinkemojistaff.png")+"Lore"],["arcs",ICO("29335-pinkemojistaff.png")+"Story arcs"],["ships",ICO("674881-pinkletterwings.png")+"Ships"],["ideas",ICO("940895-pinkemojistaff.png")+"Ideas"],["rp",ICO("4901_roleplay.png")+"RP Info"],["journal",ICO("794527-pinkemojistaff.png")+"Journals"],["designs",ICO("489178-pinkemojistaff.png")+"My Designs"],["settings","⚙️ Settings"]];
 const state={ tab:"home", selOC:null, charQ:"", loreQ:"" };
 let SENT={}, STICKIES=[];
-function setTab(t){ state.tab=t; if(t!=="chars")state.selOC=null; render(); }
+function setTab(t){ state.tab=t; if(t!=="chars"){state.selOC=null;state.editOC=null;} render(); }
 function animateView(){ const v=document.getElementById("view"); if(!v)return; v.classList.remove("view-enter"); void v.offsetWidth; v.classList.add("view-enter"); clearTimeout(v._animT); v._animT=setTimeout(()=>v.classList.remove("view-enter"),750); }
 function applySettings(){
   try{
@@ -367,8 +394,11 @@ async function render(){
     mergeCfg(SENT.ocAppConfig); STICKIES=SENT.ocStickies||[];
     let html;
     if(state.tab==="home") html=renderHome();
-    else if(state.tab==="chars") html=state.selOC?renderCharDetail():renderChars();
+    else if(state.tab==="chars") html=state.editOC?renderCharSheet():(state.selOC?renderCharDetail():renderChars());
     else if(state.tab==="gallery") html=renderGalleryTab();
+    else if(state.tab==="rp") html=renderRpInfo();
+    else if(state.tab==="journal") html=renderJournals();
+    else if(state.tab==="designs") html=renderDesigns();
     else if(state.tab==="lore") html=renderLore();
     else if(state.tab==="arcs") html=renderArcs();
     else if(state.tab==="ships") html=renderShips();
@@ -492,7 +522,7 @@ function renderChars(){
     <div class="panel"><div class="card-head"><h2 style="font-size:20px">🎭 Characters</h2><button class="btn btn-pink" data-act="addOC" ${RO?"disabled":""}>＋ new character</button></div>
       <input class="inp" id="charSearch" placeholder="search name, species, tags…" value="${esc(state.charQ||"")}" /></div>
     <div class="oc-grid">${ocs.map(o=>`<div class="oc-card" data-act="openOC" data-id="${o.id}">
-      ${o.pfp?`<div class="oc-banner" style="background-image:url('${esc(o.pfp)}')"></div>`:""}
+      ${(o.banner||o.pfp)?`<div class="oc-banner" style="background-image:url('${esc(o.banner||o.pfp)}')"></div>`:""}
       <div style="display:flex;gap:10px;align-items:center">${avaHTML(o,54,27)}
         <div><div style="font-family:var(--display);font-size:16px">${esc(o.name)}</div><div class="label" style="margin-top:1px">${esc(o.species||"")}${o.pronouns?` · ${esc(o.pronouns)}`:""}</div></div></div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">${rpPill(o)}${o.role?`<span class="pill pill-pink">${esc(o.role)}</span>`:""}</div>
@@ -514,14 +544,19 @@ function renderCharDetail(){
   const chips=(arr,cls)=>(arr||[]).map(t=>`<span class="pill ${cls}" style="margin:2px">${esc(t)}</span>`).join("");
   const link=(u,txt)=>u?`<a href="${esc(u)}" target="_blank" rel="noopener" style="font-size:12.5px">${esc(txt||u)}</a>`:"";
   return `<div style="display:flex;flex-direction:column;gap:14px">
-    <div class="panel"><div class="card-head">
-      <div style="display:flex;gap:12px;align-items:center"><button class="btn" data-act="backToChars">← back</button>
-        ${avaHTML(o,72,36)}
-        <div><h2 style="font-size:22px">${esc(o.name)}</h2>
-        ${(o.adjectives&&o.adjectives.length)?`<div class="label" style="margin-top:2px;color:var(--lav-deep)">✦ ${o.adjectives.map(esc).join(" ✦ ")} ✦</div>`:""}
-        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px">${rpPill(o)}<span class="pill pill-blue">${esc(o.species||"?")}</span><span class="pill pill-lav">${esc(o.pronouns||"")}</span>${o.role?`<span class="pill pill-pink">${esc(o.role)}</span>`:""}${(o.tags||[]).map(t=>`<span class="pill pill-gray">${esc(t)}</span>`).join("")}</div>
-        ${o.quote?`<div class="oc-quote">“${esc(o.quote)}”</div>`:""}</div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="pfpUpload" ${RO?"disabled":""}>📷 ${o.pfp?"change":"set"} profile pic</button>${o.pfp?`<button class="btn" data-act="pfpClear" ${RO?"disabled":""}>✕ pic</button>`:""}<button class="btn" data-act="editOC" data-id="${o.id}" ${RO?"disabled":""}>✏️ edit</button><button class="btn" data-act="delOC" data-id="${o.id}" ${RO?"disabled":""}>🗑 delete</button></div></div>
+    <div class="panel">
+      <div class="oc-hero">
+        <div class="oc-hero-banner" style="${o.banner?`background-image:url('${esc(o.banner)}')`:`background:${ocGrad(o)}`}"></div>
+        <div class="oc-hero-ava">${avaHTML(o,92,46)}</div>
+      </div>
+      <div class="oc-hero-body">
+        <div class="card-head" style="align-items:flex-start">
+          <div><h2 style="font-size:24px">${esc(o.name)}</h2>
+            ${(o.adjectives&&o.adjectives.length)?`<div class="label" style="margin-top:2px;color:var(--lav-deep)">✦ ${o.adjectives.map(esc).join(" ✦ ")} ✦</div>`:""}
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${rpPill(o)}<span class="pill pill-blue">${esc(o.species||"?")}</span><span class="pill pill-lav">${esc(o.pronouns||"")}</span>${o.role?`<span class="pill pill-pink">${esc(o.role)}</span>`:""}${(o.tags||[]).map(t=>`<span class="pill pill-gray">${esc(t)}</span>`).join("")}</div>
+            ${o.quote?`<div class="oc-quote">“${esc(o.quote)}”</div>`:""}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="backToChars">← back</button><button class="btn" data-act="editOC" data-id="${o.id}" ${RO?"disabled":""}>✏️ open sheet</button><button class="btn" data-act="delOC" data-id="${o.id}" ${RO?"disabled":""}>🗑</button></div>
+        </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="soft-card"><div class="label">🌸 Summary</div><p class="soft" style="font-size:13px;margin:5px 0 0;white-space:pre-wrap">${esc(o.summary||"—")}</p></div>
         <div class="soft-card"><div class="label">🗣️ Voice</div><p class="soft" style="font-size:13px;margin:5px 0 0;white-space:pre-wrap">${esc(o.voice||"—")}</p></div>
@@ -530,6 +565,7 @@ function renderCharDetail(){
         ${fact("Nickname",o.nickname)}${fact("Age",o.age)}${fact("Birthday",o.birthday)}${fact("Zodiac",o.zodiac)}${fact("Gender",o.gender)}${fact("Height",o.height)}${fact("Origin",o.origin)}${fact("Orientation",o.orientation)}${fact("Occupation",o.occupation)}${fact("Alignment",o.alignment)}</div>`:""}
       ${o.stats&&STAT_KEYS.some(([k])=>o.stats[k])?`<div class="soft-card" style="margin-top:10px"><div class="label" style="margin-bottom:4px">🎲 Stats</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px 16px">${STAT_KEYS.map(([k,l])=>`<div style="display:flex;justify-content:space-between;font-size:13px"><b style="font-size:11px;letter-spacing:.08em;color:var(--muted)">${l}</b><span style="color:var(--pink-deep);letter-spacing:2px">${stars(o.stats[k])}</span></div>`).join("")}</div></div>`:""}
       ${(o.palette&&o.palette.length)?`<div class="label" style="margin:12px 0 6px">🎨 Palette · tap to copy</div><div class="oc-sw">${o.palette.map(c=>`<button style="background:${esc(c)}" data-act="copyText" data-t="${esc(c)}">${esc(c)}</button>`).join("")}</div>`:""}
+      </div>
     </div>
     <details class="acc" open><summary>💗 Personality</summary><div class="acc-body">
       ${o.personality?`<p class="soft" style="font-size:13px;line-height:1.65;white-space:pre-wrap;margin:0 0 10px">${esc(o.personality)}</p>`:""}
@@ -597,56 +633,72 @@ function renderCharDetail(){
     </div>
   </div>`;
 }
-function ocModal(o){
-  o=o||{}; const ad=o.adopt||{};
+/* ===== full-page character sheet editor (D&D-sheet style) ===== */
+let _pend={};   // pending pfp/banner uploads before save
+function renderCharSheet(){
+  const isNew=state.editOC==="new";
+  const o=isNew?{}:(ocById(state.editOC)||{}); const ad=o.adopt||{};
+  _pend={};
   const pal=(o.palette&&o.palette.length?o.palette:["#f49fc6","#9ec5f2","#a795e6","#f0cc88"]).slice(0,4);
   while(pal.length<4)pal.push("#ffffff");
-  const F=(id2,lbl,val,ph)=>`<div class="grow" style="min-width:120px"><div class="label">${lbl}</div><input class="inp" id="${id2}" value="${esc(val||"")}" placeholder="${esc(ph||"")}" /></div>`;
+  const F=(id2,lbl,val,ph)=>`<div class="grow" style="min-width:130px"><div class="label">${lbl}</div><input class="inp" id="${id2}" value="${esc(val||"")}" placeholder="${esc(ph||"")}" /></div>`;
   const T=(id2,lbl,val,rows,ph)=>`<div class="label" style="margin-top:8px">${lbl}</div><textarea class="inp" id="${id2}" rows="${rows||2}" placeholder="${esc(ph||"")}">${esc(val||"")}</textarea>`;
-  document.getElementById("modal").innerHTML=`<div class="modal-bg" data-act="closeModal"><div class="panel" style="max-width:560px;width:100%;max-height:92vh;overflow:auto"><div class="card-head"><h3 style="font-size:16px">${o.id?"✏️ Edit":"🌱 New"} character</h3><button class="btn" data-act="closeModal">✕</button></div>
+  return `<div class="sheet">
     <input type="hidden" id="oc_id" value="${esc(o.id||"")}" />
-    <div style="display:flex;gap:10px;flex-wrap:wrap"><div class="grow" style="min-width:160px"><div class="label">Name</div><input class="inp" id="oc_name" value="${esc(o.name||"")}" /></div><div style="width:84px"><div class="label">Emoji</div><input class="inp" id="oc_emoji" value="${esc(o.emoji||"")}" placeholder="🦄" /></div></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_species","Species / race",o.species)}${F("oc_pronouns","Pronouns",o.pronouns)}${F("oc_role","Role",o.role,"protagonist…")}</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_adjectives","Three adjectives (comma separated)",(o.adjectives||[]).join(", "),"soft, stubborn, sweet")}<div style="width:150px"><div class="label">RP status</div><select class="inp" id="oc_rpStatus"><option value="">—</option><option value="open" ${o.rpStatus==="open"?"selected":""}>RP Open</option><option value="closed" ${o.rpStatus==="closed"?"selected":""}>RP Closed</option><option value="payment" ${o.rpStatus==="payment"?"selected":""}>Payment Plan</option></select></div></div>
-    ${T("oc_summary","About / summary",o.summary,3)}
-    ${T("oc_voice","Voice / how they talk",o.voice,2)}
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_quote","Signature quote",o.quote,"something they'd say")}</div>
-    <div class="label" style="margin-top:8px">Tags (comma separated)</div><input class="inp" id="oc_tags" value="${esc((o.tags||[]).join(", "))}" placeholder="sweet, magical, baker" />
-    <div class="label" style="margin-top:8px">Palette</div><div style="display:flex;gap:8px">${pal.map((c,i)=>`<input type="color" id="oc_pal${i}" value="${esc(c)}" style="width:46px;height:38px;border:1px solid var(--line-2);border-radius:10px;background:#fff;padding:2px" />`).join("")}</div>
-    <details class="acc" style="margin-top:12px"><summary>🪪 Identity details</summary><div class="acc-body">
-      <div style="display:flex;gap:10px;flex-wrap:wrap">${F("oc_nickname","Nickname",o.nickname)}${F("oc_age","Age",o.age)}${F("oc_birthday","Birthday",o.birthday)}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_gender","Gender",o.gender)}${F("oc_zodiac","Zodiac",o.zodiac)}${F("oc_height","Height",o.height)}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_origin","Origin",o.origin)}${F("oc_orientation","Orientation",o.orientation)}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_occupation","Occupation",o.occupation)}${F("oc_alignment","Alignment / MBTI",o.alignment,"chaotic cozy…")}</div>
-    </div></details>
-    <details class="acc"><summary>🎲 Stats (0–5)</summary><div class="acc-body">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${STAT_KEYS.map(([k,l])=>`<div><div class="label">${l}</div><input class="inp num" id="oc_st_${k}" type="number" min="0" max="5" value="${(o.stats&&o.stats[k])||""}" /></div>`).join("")}</div>
-    </div></details>
-    <details class="acc"><summary>💗 Personality</summary><div class="acc-body">
+    <div class="card-head"><h2 style="font-size:21px">${isNew?"🌱 New character sheet":"📜 "+esc(o.name||"Character")+"'s sheet"}</h2>
+      <div style="display:flex;gap:8px"><button class="btn" data-act="sheetCancel">✕ cancel</button><button class="btn btn-pink" data-act="saveOC">💾 save character</button></div></div>
+
+    <div class="sheet-box"><h4>Portrait & banner</h4>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+        <div class="sheet-port" id="sheetPort" data-act="sheetPfp" style="${o.pfp?`background-image:url('${esc(o.pfp)}');border-style:solid;color:transparent`:""}">${o.pfp?"":"📷<br>profile pic<br>(tap to upload)"}</div>
+        <div class="grow" style="min-width:240px"><div class="sheet-banner" id="sheetBan" data-act="sheetBanner" style="${o.banner?`background-image:url('${esc(o.banner)}');border-style:solid;color:transparent`:""}">${o.banner?"":"🖼️ banner (tap to upload — like a Discord profile)"}</div></div>
+      </div>
+      <p class="soft" style="font-size:11px;margin:8px 0 0">you can also open any gallery art later and ⭐ set it as the profile pic or banner</p>
+    </div>
+
+    <div class="sheet-box"><h4>Who they are</h4>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><div class="grow" style="min-width:180px"><div class="label">Name</div><input class="inp" id="oc_name" value="${esc(o.name||"")}" style="font-family:var(--display);font-size:17px" /></div><div style="width:84px"><div class="label">Emoji</div><input class="inp" id="oc_emoji" value="${esc(o.emoji||"")}" placeholder="🦄" /></div><div style="width:160px"><div class="label">RP status</div><select class="inp" id="oc_rpStatus"><option value="">—</option><option value="open" ${o.rpStatus==="open"?"selected":""}>RP Open</option><option value="closed" ${o.rpStatus==="closed"?"selected":""}>RP Closed</option><option value="payment" ${o.rpStatus==="payment"?"selected":""}>Payment Plan</option></select></div></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_species","Species / race",o.species)}${F("oc_pronouns","Pronouns",o.pronouns)}${F("oc_role","Role",o.role,"protagonist…")}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_adjectives","Three adjectives",(o.adjectives||[]).join(", "),"soft, stubborn, sweet")}${F("oc_quote","Signature quote",o.quote,"something they'd say")}</div>
+      ${T("oc_summary","About / summary",o.summary,3)}
+      ${T("oc_voice","Voice / how they talk",o.voice,2)}
+      <div class="label" style="margin-top:8px">Tags (comma separated)</div><input class="inp" id="oc_tags" value="${esc((o.tags||[]).join(", "))}" />
+      <div class="label" style="margin-top:8px">Palette</div><div style="display:flex;gap:8px">${pal.map((c,i)=>`<input type="color" id="oc_pal${i}" value="${esc(c)}" style="width:46px;height:38px;border:1px solid var(--line-2);border-radius:10px;background:#fff;padding:2px" />`).join("")}</div>
+    </div>
+
+    <div class="sheet-box"><h4>🎲 Ability scores (0–5)</h4>
+      <div class="sheet-grid" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">${STAT_KEYS.map(([k,l])=>`<div class="stat-box"><span class="label">${l}</span><input id="oc_st_${k}" type="number" min="0" max="5" value="${(o.stats&&o.stats[k])||0}" data-stat="${k}" /><div class="st-stars" id="st_stars_${k}">${stars(o.stats&&o.stats[k])}</div></div>`).join("")}</div>
+    </div>
+
+    <div class="sheet-box"><h4>🪪 Identity</h4>
+      <div class="sheet-grid">${F("oc_nickname","Nickname",o.nickname)}${F("oc_age","Age",o.age)}${F("oc_birthday","Birthday",o.birthday)}${F("oc_gender","Gender",o.gender)}${F("oc_zodiac","Zodiac",o.zodiac)}${F("oc_height","Height",o.height)}${F("oc_origin","Origin",o.origin)}${F("oc_orientation","Orientation",o.orientation)}${F("oc_occupation","Occupation",o.occupation)}${F("oc_alignment","Alignment / MBTI",o.alignment,"chaotic cozy…")}</div>
+    </div>
+
+    <div class="sheet-box"><h4>💗 Personality</h4>
       ${T("oc_personality","Personality (free-form)",o.personality,4)}
-      <div class="label" style="margin-top:8px">Favorites (comma separated)</div><input class="inp" id="oc_favorites" value="${esc((o.favorites||[]).join(", "))}" />
-      <div class="label" style="margin-top:8px">Likes (comma separated)</div><input class="inp" id="oc_likes" value="${esc((o.likes||[]).join(", "))}" />
-      <div class="label" style="margin-top:8px">Dislikes (comma separated)</div><input class="inp" id="oc_dislikes" value="${esc((o.dislikes||[]).join(", "))}" />
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_fears","Fears",o.fears)}${F("oc_strengths","Strengths",o.strengths)}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_flaws","Flaws",o.flaws)}${F("oc_abilities","Abilities / powers",o.abilities)}</div>
-    </div></details>
-    <details class="acc"><summary>🔮 Esoterica</summary><div class="acc-body">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${ESO_KEYS.map(([k,l])=>`<div><div class="label">${l}</div><input class="inp" id="oc_eso_${k}" value="${esc((o.esoterica&&o.esoterica[k])||"")}" /></div>`).join("")}</div>
-    </div></details>
-    <details class="acc"><summary>🎶 Vibes & story</summary><div class="acc-body">
-      <div style="display:flex;gap:10px;flex-wrap:wrap">${F("oc_voiceClaim","Voice claim",o.voiceClaim,"Actor — Role")}${F("oc_aesthetic","Aesthetic",o.aesthetic,"pastel bakery-core")}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_themeSong","Theme song (link)",o.themeSong,"https://…")}${F("oc_playlist","Playlist (link)",o.playlist,"https://…")}</div>
-      ${T("oc_backstory","Backstory",o.backstory,5)}
-    </div></details>
-    <details class="acc"><summary>🎨 Design & adopt credits</summary><div class="acc-body">
-      ${T("oc_designNotes","Design notes — must-haves for artists",o.designNotes,3,"e.g. horn always has a pink-to-lilac gradient; heart pupils; cream sock markings")}
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_adDesigner","Designed by",ad.designer,"original artist")}${F("oc_adDesignerUrl","Designer link",ad.designerUrl,"https://…")}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_adFrom","Obtained from",ad.from)}${F("oc_adDate","Obtained on",ad.date,"YYYY-MM-DD")}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${F("oc_adMethod","Method",ad.method,"purchase / trade / gift / MYO")}${F("oc_adPrice","Price",ad.price,"$…")}</div>
+      <div class="sheet-grid" style="margin-top:8px">
+        <div><div class="label">Favorites (comma separated)</div><input class="inp" id="oc_favorites" value="${esc((o.favorites||[]).join(", "))}" /></div>
+        <div><div class="label">Likes</div><input class="inp" id="oc_likes" value="${esc((o.likes||[]).join(", "))}" /></div>
+        <div><div class="label">Dislikes</div><input class="inp" id="oc_dislikes" value="${esc((o.dislikes||[]).join(", "))}" /></div>
+      </div>
+      <div class="sheet-grid" style="margin-top:8px">${F("oc_fears","Fears",o.fears)}${F("oc_strengths","Strengths",o.strengths)}${F("oc_flaws","Flaws",o.flaws)}${F("oc_abilities","Abilities / powers",o.abilities)}</div>
+    </div>
+
+    <div class="sheet-box"><h4>🔮 Esoterica & vibes</h4>
+      <div class="sheet-grid">${ESO_KEYS.map(([k,l])=>`<div><div class="label">${l}</div><input class="inp" id="oc_eso_${k}" value="${esc((o.esoterica&&o.esoterica[k])||"")}" /></div>`).join("")}</div>
+      <div class="sheet-grid" style="margin-top:8px">${F("oc_voiceClaim","Voice claim",o.voiceClaim,"Actor — Role")}${F("oc_aesthetic","Aesthetic",o.aesthetic)}${F("oc_themeSong","Theme song (link)",o.themeSong,"https://…")}${F("oc_playlist","Playlist (link)",o.playlist,"https://…")}</div>
+    </div>
+
+    <div class="sheet-box"><h4>📖 Story</h4>${T("oc_backstory","Backstory",o.backstory,6)}</div>
+
+    <div class="sheet-box"><h4>🎨 Design & adopt credits</h4>
+      ${T("oc_designNotes","Design notes — must-haves for artists",o.designNotes,3,"e.g. horn always pink→lilac; heart pupils; cream sock markings")}
+      <div class="sheet-grid" style="margin-top:8px">${F("oc_adDesigner","Designed by",ad.designer,"original artist")}${F("oc_adDesignerUrl","Designer link",ad.designerUrl,"https://…")}${F("oc_adFrom","Obtained from",ad.from)}${F("oc_adDate","Obtained on",ad.date,"YYYY-MM-DD")}${F("oc_adMethod","Method",ad.method,"purchase / trade / gift / MYO")}${F("oc_adPrice","Price",ad.price,"$…")}</div>
       ${T("oc_adTerms","Resale / trade terms (designer's TOS)",ad.terms,2)}
-    </div></details>
-    <button class="btn btn-pink" data-act="saveOC" style="margin-top:14px;width:100%">💾 save character</button>
-  </div></div>`;
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" data-act="sheetCancel">✕ cancel</button><button class="btn btn-pink" data-act="saveOC" style="padding:10px 22px">💾 save character</button></div>
+  </div>`;
 }
 async function saveOCFromModal(){
   const v=id=>{const e=document.getElementById(id);return e?e.value.trim():"";};
@@ -668,9 +720,11 @@ async function saveOCFromModal(){
     voiceClaim:v("oc_voiceClaim"), aesthetic:v("oc_aesthetic"), themeSong:v("oc_themeSong"), playlist:v("oc_playlist"),
     backstory:v("oc_backstory"), designNotes:v("oc_designNotes"),
     adopt:{ designer:v("oc_adDesigner"), designerUrl:v("oc_adDesignerUrl"), from:v("oc_adFrom"), date:v("oc_adDate"), method:v("oc_adMethod"), price:v("oc_adPrice"), terms:v("oc_adTerms") } };
-  if(id){ await ocMut("ocs",a=>a.map(x=>x.id===id?{...x,...patch}:x)); }
+  if(_pend.pfp!==undefined)patch.pfp=_pend.pfp;
+  if(_pend.banner!==undefined)patch.banner=_pend.banner;
+  if(id){ await ocMut("ocs",a=>a.map(x=>x.id===id?{...x,...patch}:x)); state.selOC=id; }
   else { const nid=uid(); await ocMut("ocs",a=>[...a,{id:nid,refs:[],trivia:[],gallery:[],ownLog:[],created_at:TODAY,...patch}]); state.selOC=nid; state.tab="chars"; }
-  closeModal(); toast("Saved 💗"); render();
+  _pend={}; state.editOC=null; closeModal(); toast("Sheet saved 💗"); render();
 }
 async function ocPatch(id,fn){ await ocMut("ocs",a=>a.map(x=>x.id===id?fn({...x}):x)); }
 /* ---- ref board cards (stored on the character: oc.refs) ---- */
@@ -743,6 +797,7 @@ function galViewModal(ocId,gid){
     <img src="${esc(g.url)}" alt="" style="max-width:100%;max-height:68vh;display:block;margin:0 auto;border-radius:12px"/>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;justify-content:center">
       <button class="btn btn-pink" data-act="setPfp" data-oc="${o.id}" data-id="${g.id}" ${RO?"disabled":""}>⭐ set as profile pic</button>
+      <button class="btn" data-act="setBanner" data-oc="${o.id}" data-id="${g.id}" ${RO?"disabled":""}>🖼 set as banner</button>
       ${isHttp?`<a class="btn" href="${esc(g.url)}" target="_blank" rel="noopener" style="text-decoration:none">↗ open original</a>`:""}
       <button class="btn" data-act="galDelG" data-oc="${o.id}" data-id="${g.id}" ${RO?"disabled":""}>🗑 delete</button>
     </div></div></div>`;
@@ -872,6 +927,80 @@ function renderIdeas(){
   </div>`;
 }
 
+/* ===================== RP INFO ===================== */
+function renderRpInfo(){
+  const rp=SENT.ocRpInfo||{};
+  const ocs=SENT.ocs||[];
+  return `<div style="max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
+    <div class="panel"><div class="card-head"><h2 style="font-size:20px"><img class="ti" src="4901_roleplay.png" alt=""> RP Info</h2><button class="btn btn-pink" data-act="rpSave" ${RO?"disabled":""}>💾 save</button></div>
+      <div class="label" style="margin-bottom:4px">Rules, preferences & limits</div>
+      <textarea class="inp" id="rpBody" rows="8" placeholder="how you RP: platforms, response pace, comfort zones, hard limits, who to contact…" ${RO?"disabled":""}>${esc(rp.body||"")}</textarea>
+      <div class="label" style="margin:10px 0 4px">Starters & prompts you love</div>
+      <textarea class="inp" id="rpStarters" rows="4" placeholder="scenarios, dynamics and tropes you're always up for…" ${RO?"disabled":""}>${esc(rp.starters||"")}</textarea>
+    </div>
+    <div class="panel"><div class="card-head"><span class="label">Who's open right now</span><span class="label">set per character on their sheet</span></div>
+      ${ocs.map(o=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)">${avaHTML(o,30,15)}<span class="grow" style="font-size:13px;font-weight:600">${esc(o.name)}</span>${rpPill(o)||`<span class="pill pill-gray">unset</span>`}</div>`).join("")||`<p class="soft" style="font-size:12.5px;margin:0">no characters yet 🌙</p>`}
+    </div>
+  </div>`;
+}
+
+/* ===================== JOURNALS ===================== */
+function renderJournals(){
+  const js=SENT.ocJournals||[];
+  return `<div style="max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
+    <div class="panel"><div class="card-head"><h2 style="font-size:20px"><img class="ti" src="794527-pinkemojistaff.png" alt=""> Journals</h2><button class="btn btn-pink" data-act="jrNew" ${RO?"disabled":""}>＋ new entry</button></div>
+      <p class="soft" style="font-size:12.5px;margin:0">diary entries, RP recaps, dreams about your little guys — dated and linked to whoever it's about 📔</p></div>
+    ${js.slice().reverse().map(j=>`<details class="acc"><summary><span>${esc(j.title)}</span><span class="label num" style="margin-left:auto;margin-right:8px">${esc(j.date||"")}</span></summary>
+      <div class="acc-body">
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">${(j.ocIds||[]).map(ocChip).join("")}</div>
+        <p class="soft" style="font-size:13px;line-height:1.65;white-space:pre-wrap;margin:0">${esc(j.body||"")}</p>
+        <div style="display:flex;gap:8px;margin-top:12px"><button class="btn" data-act="jrEdit" data-id="${j.id}" ${RO?"disabled":""}>✏️ edit</button><button class="btn" data-act="jrDel" data-id="${j.id}" ${RO?"disabled":""}>🗑 delete</button></div>
+      </div></details>`).join("")||`<div class="panel" style="text-align:center"><img class="deco" src="6128-pink-teacup.gif" alt="" style="height:40px"/><p class="soft" style="font-size:13px;margin:6px 0 0">no entries yet — first page of a very cute diary 📔</p></div>`}
+  </div>`;
+}
+let _jrLinks=[];
+function jrModal(j){
+  j=j||{};
+  document.getElementById("modal").innerHTML=`<div class="modal-bg" data-act="closeModal"><div class="panel" style="max-width:520px;width:100%;max-height:92vh;overflow:auto"><div class="card-head"><h3 style="font-size:16px">${j.id?"✏️ Edit":"📔 New"} journal entry</h3><button class="btn" data-act="closeModal">✕</button></div>
+    <input type="hidden" id="jr_id" value="${esc(j.id||"")}" />
+    <div style="display:flex;gap:10px"><div class="grow"><div class="label">Title</div><input class="inp" id="jr_title" value="${esc(j.title||"")}" /></div><div style="width:140px"><div class="label">Date</div><input class="inp" id="jr_date" type="date" value="${esc(j.date||TODAY)}" /></div></div>
+    <div class="label" style="margin-top:8px">Entry</div><textarea class="inp" id="jr_body" rows="8">${esc(j.body||"")}</textarea>
+    <div class="label" style="margin-top:8px">Who it's about</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${(SENT.ocs||[]).map(o=>`<button class="chiptog ${_jrLinks.includes(o.id)?'on':''}" data-act="jrLink" data-id="${o.id}"><span class="check ${_jrLinks.includes(o.id)?'on':''}"></span>${o.emoji||"🎭"} ${esc(o.name)}</button>`).join("")}</div>
+    <button class="btn btn-pink" data-act="saveJr" style="margin-top:14px;width:100%">💾 save entry</button>
+  </div></div>`;
+}
+
+/* ===================== MY DESIGNS ===================== */
+const DG_STATUS={keep:["forever home","pill-mint"],uft:["up for trade","pill-blue"],ufs:["up for sale","pill-peach"],nfs:["NFS / NFT","pill-gray"]};
+function renderDesigns(){
+  const ds=SENT.ocDesigns||[];
+  return `<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="panel"><div class="card-head"><h2 style="font-size:20px"><img class="ti" src="489178-pinkemojistaff.png" alt=""> My Designs</h2><button class="btn btn-pink" data-act="dgNew" ${RO?"disabled":""}>＋ add design</button></div>
+      <p class="soft" style="font-size:12.5px;margin:0">designs you own that aren't full characters (yet) — adopts, MYOs, concepts — with credits and trade status 🏷️</p></div>
+    <div class="dg-grid">${ds.slice().reverse().map(d=>{const st=DG_STATUS[d.status]||null;return `<div class="gal-card">
+      <div class="dg-thumb" ${d.img?`style="background-image:url('${esc(d.img)}')"`:""} data-act="dgEdit" data-id="${d.id}">${d.img?"":"🎨"}</div>
+      <div class="gal-body"><div style="display:flex;justify-content:space-between;gap:6px;align-items:baseline"><span style="font-size:13px;font-weight:600">${esc(d.name||"unnamed")}</span>${st?`<span class="pill ${st[1]}">${st[0]}</span>`:""}</div>
+        ${d.designer?`<span style="font-size:11.5px">🎨 ${esc(d.designer)}</span>`:""}
+        ${d.price?`<span class="label">worth ${esc(d.price)}</span>`:""}
+        ${d.notes?`<span class="soft" style="font-size:11.5px">${esc(d.notes)}</span>`:""}
+        <div style="display:flex;gap:6px;margin-top:4px"><button class="btn" style="padding:3px 9px" data-act="dgEdit" data-id="${d.id}" ${RO?"disabled":""}>✏️</button><button class="btn" style="padding:3px 9px" data-act="dgPromote" data-id="${d.id}" ${RO?"disabled":""} title="turn into a full character">🌱</button><button class="btn" style="padding:3px 9px" data-act="dgDel" data-id="${d.id}" ${RO?"disabled":""}>🗑</button></div>
+      </div></div>`;}).join("")||`<div class="panel" style="grid-column:1/-1;text-align:center"><img class="deco" src="3937-molanglollipop.png" alt="" style="height:40px"/><p class="soft" style="font-size:13px;margin:6px 0 0">no designs shelved yet — adopts you collect can live here before they become full characters 🌱</p></div>`}</div>
+  </div>`;
+}
+let _dgImg;
+function dgModal(d){
+  d=d||{}; _dgImg=undefined;
+  document.getElementById("modal").innerHTML=`<div class="modal-bg" data-act="closeModal"><div class="panel" style="max-width:440px;width:100%;max-height:92vh;overflow:auto"><div class="card-head"><h3 style="font-size:16px">${d.id?"✏️ Edit":"🏷️ New"} design</h3><button class="btn" data-act="closeModal">✕</button></div>
+    <input type="hidden" id="dg_id" value="${esc(d.id||"")}" />
+    <div class="sheet-banner" id="dgImgBox" data-act="dgUpload" style="height:140px;${d.img?`background-image:url('${esc(d.img)}');border-style:solid;color:transparent`:""}">${d.img?"":"🖼️ tap to upload the design"}</div>
+    <div style="display:flex;gap:10px;margin-top:10px"><div class="grow"><div class="label">Name</div><input class="inp" id="dg_name" value="${esc(d.name||"")}" /></div><div style="width:150px"><div class="label">Status</div><select class="inp" id="dg_status">${Object.entries(DG_STATUS).map(([k,[l]])=>`<option value="${k}" ${d.status===k?"selected":""}>${l}</option>`).join("")}</select></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px"><div class="grow"><div class="label">Designed by</div><input class="inp" id="dg_designer" value="${esc(d.designer||"")}" /></div><div style="width:120px"><div class="label">Worth / price</div><input class="inp" id="dg_price" value="${esc(d.price||"")}" placeholder="$…" /></div></div>
+    <div class="label" style="margin-top:8px">Notes (terms, ideas, vibes)</div><textarea class="inp" id="dg_notes" rows="3">${esc(d.notes||"")}</textarea>
+    <button class="btn btn-pink" data-act="saveDg" style="margin-top:14px;width:100%">💾 save design</button>
+  </div></div>`;
+}
+
 /* ===================== SETTINGS ===================== */
 function renderSettings(){
   const calm=localStorage.getItem("oc-calm")==="1", big=localStorage.getItem("oc-text")==="1", locked=localStorage.getItem("oc-layout-locked")==="1";
@@ -903,7 +1032,7 @@ function renderSettings(){
   </div>`;
 }
 function exportData(){
-  const keys=["ocs","ocLore","ocShips","ocArcs","ocIdeas","ocInspo","ocStickies","ocLayouts","ocAppConfig"];
+  const keys=["ocs","ocLore","ocShips","ocArcs","ocIdeas","ocInspo","ocRpInfo","ocJournals","ocDesigns","ocStickies","ocLayouts","ocAppConfig"];
   const out={}; keys.forEach(k=>{ if(SENT[k]!=null)out[k]=SENT[k]; });
   const blob=new Blob([JSON.stringify(out,null,2)],{type:"application/json"});
   const u=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=u; a.download="oc-hub-backup-"+TODAY+".json";
@@ -926,7 +1055,7 @@ function renderStickies(){
 }
 
 /* ===================== EVENTS (one dispatcher for everything) ===================== */
-const WRITE_ACTS=["addOC","saveOC","delOC","editOC","mbAddImage","mbAddNote","mbAddColor","mbDel","mbUpload","loreNew","saveLore","loreDel","loreEdit","loreLink","addArc","arcStage","arcLink","beatAdd","beatDone","beatDel","arcDel","shipNew","saveShip","shipEdit","shipDel","ocIdeaAdd","ocIdeaDel","ideaToArc","ocInspoAdd","ocInspoDel","ocInspoDone","homeIdeaAdd","homeMin","homeHide","cardToggle","resetLayout","saveConfig","addSticky","delSticky","stickyColor","triviaAdd","triviaDel","ownAdd","ownDel","galAddUrl","galDel","galUpload","setPfp","galDelG","pfpUpload","pfpClear"];
+const WRITE_ACTS=["addOC","saveOC","delOC","editOC","mbAddImage","mbAddNote","mbAddColor","mbDel","mbUpload","loreNew","saveLore","loreDel","loreEdit","loreLink","addArc","arcStage","arcLink","beatAdd","beatDone","beatDel","arcDel","shipNew","saveShip","shipEdit","shipDel","ocIdeaAdd","ocIdeaDel","ideaToArc","ocInspoAdd","ocInspoDel","ocInspoDone","homeIdeaAdd","homeMin","homeHide","cardToggle","resetLayout","saveConfig","addSticky","delSticky","stickyColor","triviaAdd","triviaDel","ownAdd","ownDel","galAddUrl","galDel","galUpload","setPfp","setBanner","galDelG","pfpUpload","pfpClear","sheetPfp","sheetBanner","rpSave","jrNew","jrEdit","jrLink","saveJr","jrDel","dgNew","dgEdit","dgUpload","saveDg","dgDel","dgPromote"];
 document.addEventListener("click",async(e)=>{
   const el=e.target.closest("[data-act]"); if(!el)return; const act=el.dataset.act, id=el.dataset.id;
   if(RO && WRITE_ACTS.includes(act)){ toast("Demo mode — connect Supabase to save 🌸"); return; }
@@ -937,10 +1066,13 @@ document.addEventListener("click",async(e)=>{
   if(act==="copyText"){ if(navigator.clipboard)navigator.clipboard.writeText(el.dataset.t); toast("Copied 💗"); return; }
 
   /* characters */
-  if(act==="addOC")return ocModal(null);
-  if(act==="openOC"){ state.selOC=id; state.tab="chars"; return render(); }
-  if(act==="backToChars"){ state.selOC=null; return render(); }
-  if(act==="editOC")return ocModal(ocById(id));
+  if(act==="addOC"){ state.editOC="new"; state.selOC=null; state.tab="chars"; return render(); }
+  if(act==="openOC"){ state.selOC=id; state.editOC=null; state.tab="chars"; return render(); }
+  if(act==="backToChars"){ state.selOC=null; state.editOC=null; return render(); }
+  if(act==="editOC"){ state.editOC=id; return render(); }
+  if(act==="sheetCancel"){ _pend={}; state.editOC=null; return render(); }
+  if(act==="sheetPfp"){ const f=document.getElementById("sheetPfpFile"); if(f){f.value="";f.click();} return; }
+  if(act==="sheetBanner"){ const f=document.getElementById("sheetBannerFile"); if(f){f.value="";f.click();} return; }
   if(act==="saveOC")return saveOCFromModal();
   if(act==="delOC"){ if(!confirm("Delete this character? Their lore links, ships and arcs stay (unlinked)."))return;
     await ocMut("ocs",a=>a.filter(x=>x.id!==id));
@@ -968,6 +1100,7 @@ document.addEventListener("click",async(e)=>{
   if(act==="galFilter"){ state.galOC=el.dataset.v; return render(); }
   if(act==="galView")return galViewModal(el.dataset.oc,id);
   if(act==="setPfp"){ const oc=el.dataset.oc; const o=ocById(oc); const g=o&&(o.gallery||[]).find(x=>x.id===id); if(g){ await ocPatch(oc,x=>({...x,pfp:g.url})); toast("Profile pic set ⭐"); } closeModal(); return render(); }
+  if(act==="setBanner"){ const oc=el.dataset.oc; const o=ocById(oc); const g=o&&(o.gallery||[]).find(x=>x.id===id); if(g){ await ocPatch(oc,x=>({...x,banner:g.url})); toast("Banner set 🖼️"); } closeModal(); return render(); }
   if(act==="galDelG"){ const oc=el.dataset.oc; await ocPatch(oc,x=>({...x,gallery:(x.gallery||[]).filter(g=>g.id!==id)})); closeModal(); toast("Deleted"); return render(); }
   if(act==="pfpUpload"){ const f=document.getElementById("pfpFile"); if(f){ f.value=""; f.click(); } return; }
   if(act==="pfpClear"){ await ocPatch(state.selOC,x=>({...x,pfp:""})); toast("Back to the emoji gumball 🦄"); return render(); }
@@ -1010,6 +1143,34 @@ document.addEventListener("click",async(e)=>{
   if(act==="ocInspoDel"){ await ocMut("ocInspo",a=>a.filter(x=>x.id!==id)); return render(); }
   if(act==="ocInspoDone"){ await ocMut("ocInspo",a=>a.map(x=>x.id===id?{...x,done:!x.done}:x)); return render(); }
 
+  /* rp info · journals · designs */
+  if(act==="rpSave"){ await ocSet("ocRpInfo",{ body:((document.getElementById("rpBody")||{}).value||"").trim(), starters:((document.getElementById("rpStarters")||{}).value||"").trim() }); toast("RP info saved 🎭"); return render(); }
+  if(act==="jrNew"){ _jrLinks=[]; return jrModal(null); }
+  if(act==="jrEdit"){ const j=(SENT.ocJournals||[]).find(x=>x.id===id); _jrLinks=(j&&j.ocIds||[]).slice(); return jrModal(j); }
+  if(act==="jrLink"){ const i=_jrLinks.indexOf(id); i>=0?_jrLinks.splice(i,1):_jrLinks.push(id); el.classList.toggle("on"); el.querySelector(".check").classList.toggle("on"); return; }
+  if(act==="saveJr"){ const title=((document.getElementById("jr_title")||{}).value||"").trim(); if(!title){toast("Give it a title 🌸");return;}
+    const jid=document.getElementById("jr_id").value;
+    const patch={ title, date:document.getElementById("jr_date").value||TODAY, body:document.getElementById("jr_body").value.trim(), ocIds:_jrLinks.slice() };
+    if(jid) await ocMut("ocJournals",a=>a.map(x=>x.id===jid?{...x,...patch}:x));
+    else await ocMut("ocJournals",a=>[...a,{id:uid(),...patch}]);
+    closeModal(); toast("Entry kept 📔"); return render(); }
+  if(act==="jrDel"){ if(!confirm("Delete this entry?"))return; await ocMut("ocJournals",a=>a.filter(x=>x.id!==id)); toast("Torn out, gently 🌙"); return render(); }
+  if(act==="dgNew")return dgModal(null);
+  if(act==="dgEdit")return dgModal((SENT.ocDesigns||[]).find(x=>x.id===id));
+  if(act==="dgUpload"){ const f=document.getElementById("dgFile"); if(f){f.value="";f.click();} return; }
+  if(act==="saveDg"){ const name=((document.getElementById("dg_name")||{}).value||"").trim(); if(!name){toast("Name the design 🌸");return;}
+    const did=document.getElementById("dg_id").value;
+    const patch={ name, status:document.getElementById("dg_status").value, designer:document.getElementById("dg_designer").value.trim(), price:document.getElementById("dg_price").value.trim(), notes:document.getElementById("dg_notes").value.trim() };
+    if(_dgImg!==undefined)patch.img=_dgImg;
+    if(did) await ocMut("ocDesigns",a=>a.map(x=>x.id===did?{...x,...patch}:x));
+    else await ocMut("ocDesigns",a=>[...a,{id:uid(),added:TODAY,...patch}]);
+    closeModal(); toast("Design shelved 🏷️"); return render(); }
+  if(act==="dgDel"){ await ocMut("ocDesigns",a=>a.filter(x=>x.id!==id)); toast("Removed"); return render(); }
+  if(act==="dgPromote"){ const d=(SENT.ocDesigns||[]).find(x=>x.id===id); if(d){ const nid=uid();
+    await ocMut("ocs",a=>[...a,{id:nid,name:d.name||"new character",emoji:"🌱",pfp:d.img||"",refs:[],trivia:[],gallery:d.img?[{id:uid(),url:d.img,artist:d.designer||"",date:TODAY}]:[],ownLog:[],adopt:{designer:d.designer||"",price:d.price||"",terms:d.notes||""},created_at:TODAY}]);
+    await ocMut("ocDesigns",a=>a.filter(x=>x.id!==id));
+    state.selOC=nid; state.tab="chars"; toast("They're a whole character now 🌱"); } return render(); }
+
   /* layout + settings */
   if(act==="homeMin"){ const k=el.dataset.w, g=el.closest(".grid-modular"), tab=g?g.dataset.tab:"home"; await setLayout(tab,L=>{L.min=Object.assign({},L.min,{[k]:!L.min[k]});}); return render(); }
   if(act==="homeHide"){ const k=el.dataset.w, g=el.closest(".grid-modular"), tab=g?g.dataset.tab:"home"; await setLayout(tab,L=>{L.hidden=Object.assign({},L.hidden,{[k]:true});}); toast("Card hidden — restore it from ＋ cards 🌸"); return render(); }
@@ -1051,7 +1212,21 @@ document.addEventListener("change",e=>{
   if(e.target&&e.target.id==="pfpFile"&&e.target.files&&e.target.files[0]){ if(RO){toast("Demo mode — connect Supabase to save 🌸");return;} (async()=>{
     try{ const {url}=await mbFileToDataURL(e.target.files[0]); await ocPatch(state.selOC,o=>({...o,pfp:url})); toast("Looking adorable ⭐"); render(); }
     catch(err){ toast("Couldn't read that image 🌸"); } })(); }
+  /* sheet editor: stash uploads until 💾 save (preview updates in place — no re-render, your typing is safe) */
+  if(e.target&&e.target.id==="sheetPfpFile"&&e.target.files&&e.target.files[0]){ (async()=>{
+    try{ const {url}=await mbFileToDataURL(e.target.files[0]); _pend.pfp=url; const el2=document.getElementById("sheetPort"); if(el2){el2.style.backgroundImage=`url('${url}')`; el2.style.borderStyle="solid"; el2.style.color="transparent";} toast("Portrait ready — hit 💾 save"); }
+    catch(err){ toast("Couldn't read that image 🌸"); } })(); }
+  if(e.target&&e.target.id==="sheetBannerFile"&&e.target.files&&e.target.files[0]){ (async()=>{
+    try{ const {url}=await mbFileToDataURL(e.target.files[0]); _pend.banner=url; const el2=document.getElementById("sheetBan"); if(el2){el2.style.backgroundImage=`url('${url}')`; el2.style.borderStyle="solid"; el2.style.color="transparent";} toast("Banner ready — hit 💾 save"); }
+    catch(err){ toast("Couldn't read that image 🌸"); } })(); }
 });
+document.addEventListener("change",e=>{
+  if(e.target&&e.target.id==="dgFile"&&e.target.files&&e.target.files[0]){ (async()=>{
+    try{ const {url}=await mbFileToDataURL(e.target.files[0]); _dgImg=url; const box=document.getElementById("dgImgBox"); if(box){box.style.backgroundImage=`url('${url}')`; box.style.borderStyle="solid"; box.style.color="transparent";} toast("Design ready — hit 💾 save"); }
+    catch(err){ toast("Couldn't read that image 🌸"); } })(); }
+});
+/* live star preview on the sheet's ability scores */
+document.addEventListener("input",e=>{ if(e.target&&e.target.dataset&&e.target.dataset.stat){ const s=document.getElementById("st_stars_"+e.target.dataset.stat); if(s)s.textContent=stars(e.target.value); } });
 /* Enter-key submits: input id → its add button */
 document.addEventListener("keydown",(e)=>{
   if(e.key!=="Enter")return; const t=e.target; if(!t||!t.id)return;
