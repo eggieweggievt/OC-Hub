@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#fdf4fa" />
+<meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="OC Hub" />
@@ -245,6 +246,32 @@
     .modal-bg{padding:10px;align-items:flex-end;}
     .modal-bg .panel{max-height:86vh!important;}
   }
+  /* ---- modal safety net: no input row can poke past the panel edge (covers future modals too) ---- */
+  .modal-bg .panel div[style*="display:flex"]{flex-wrap:wrap;}
+  input[type="date"],input[type="time"]{min-width:0;max-width:100%;}
+  select.inp{max-width:100%;}
+  .modal-bg .inp{min-width:0;}
+  .seg{flex-wrap:wrap;}
+  /* ---- phone tightening (≤640px) ---- */
+  @media(max-width:640px){
+    main{padding:12px 10px calc(76px + env(safe-area-inset-bottom,0px));}
+    #rail{padding-top:calc(8px + env(safe-area-inset-top,0px));padding-left:10px;padding-right:10px;gap:6px;}
+    .brand-name{display:none;}                 /* crown only */
+    .panel{padding:13px;border-radius:15px;}
+    .grid-modular{gap:0 10px;}
+    .toast{bottom:calc(78px + env(safe-area-inset-bottom,0px));}
+    .sheet-grid{grid-template-columns:1fr 1fr;}
+    .oc-hero-ava{bottom:-26px;} .oc-hero-body{padding-top:36px;}
+  }
+  /* ---- native-app feel ---- */
+  *{-webkit-tap-highlight-color:transparent;}
+  body{overscroll-behavior-y:none;}            /* no whole-page rubber-band */
+  nav,.kanban{overscroll-behavior-x:contain;}  /* inner swipes don't yank the page */
+  .btn,.chip,.chiptog,.hbtn,.seg>button,.check,.pill,.tab{touch-action:manipulation;}  /* no dbl-tap-zoom delay (drag handles keep touch-action:none) */
+  #nav .tab{touch-action:pan-x;}               /* re-assert after the manipulation rule above */
+  .btn:active,.chiptog:active,.hbtn:active,.seg>button:active,.chip:active{transform:scale(.96);transition:transform .06s ease;}
+  .btn,.chiptog,.hbtn{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+  @media (pointer:coarse){ .btn{padding:9px 15px;} #rail{backdrop-filter:blur(8px);} }  /* fatter targets · lighter blur scrolls smoother */
   /* ---- accessibility ---- */
   @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important;} }
   body.calm *{animation:none!important;transition:none!important;}
@@ -1402,7 +1429,7 @@ document.addEventListener("pointercancel",()=>{ resizeSticky=null; });
       else { const r=d.item.getBoundingClientRect(); d.gx=d.sx-r.left; d.gy=d.sy-r.top; const g=d.item.cloneNode(true); g.classList.add("drag-clone"); g.classList.remove("reordering","dragsrc"); g.style.width=r.width+"px"; g.style.height=r.height+"px"; g.querySelectorAll(".home-tools,.home-resize").forEach(x=>x.remove()); document.body.appendChild(g); d.ghost=g; d.item.classList.add("dragsrc"); moveGhost(d.sx,d.sy); }
     }
     e.preventDefault();
-    if(d.mode==="resize"){ const unit=d.startW/d.startCols||d.startW; let nc=Math.round((d.startW+(e.clientX-d.sx))/unit); nc=Math.max(3,Math.min(maxCols(),nc)); if(nc!==d.cols){ d.cols=nc; d.item.style.gridColumn="span "+nc; } const nh=Math.max(120,Math.round(d.startH+(e.clientY-d.sy))); d.h=nh; if(d.panel)d.panel.style.minHeight=nh+"px"; d.item.dataset.h=nh; relayoutSoon(); return; }
+    if(d.mode==="resize"){ const unit=d.startW/d.startCols||d.startW; let nc=Math.round((d.startW+(e.clientX-d.sx))/unit); nc=Math.max(3,Math.min(maxCols(),nc)); if(nc!==d.cols){ d.cols=nc; d.item.style.gridColumn="span "+nc; d.item.dataset.c=nc; } const nh=Math.max(120,Math.round(d.startH+(e.clientY-d.sy))); d.h=nh; if(d.panel)d.panel.style.minHeight=nh+"px"; d.item.dataset.h=nh; relayoutSoon(); return; }   /* dataset.c sync = the resize-persistence fix */
     moveGhost(e.clientX,e.clientY);
     const el=document.elementFromPoint(e.clientX,e.clientY), over=el&&el.closest(d.itemSel);
     if(over&&over!==d.item&&over.parentElement===d.c){ const r=over.getBoundingClientRect(), before=d.horiz?(e.clientX<r.left+r.width/2):(e.clientY<r.top+r.height/2); const ref=before?over:over.nextSibling; if(ref!==d.item){ flipReorder(d.c, ()=>d.c.insertBefore(d.item, ref)); } }
@@ -1471,7 +1498,7 @@ document.addEventListener("pointercancel",()=>{ resizeSticky=null; });
   let mx=-9999,my=-9999;
   addEventListener("pointermove",e=>{ mx=e.clientX*DPR; my=e.clientY*DPR; });
   addEventListener("pointerleave",()=>{ mx=my=-9999; });
-  const COUNT=55, sp=[];
+  const COUNT=(innerWidth<640?18:55), sp=[];   /* fewer sprinkles on phones = happier battery */
   function mk(seed){ return { x:Math.random()*W, y: seed? Math.random()*H : -30*DPR-Math.random()*80*DPR,
     v:(0.3+Math.random()*0.8)*DPR, rot:Math.random()*6.28, vr:(Math.random()-0.5)*0.02,
     wob:Math.random()*6.28, wobsp:0.006+Math.random()*0.016, amp:(0.25+Math.random()*0.6)*DPR,
