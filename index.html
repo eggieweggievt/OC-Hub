@@ -275,6 +275,7 @@
 <input type="file" id="sheetPfpFile" accept="image/*" style="display:none" />
 <input type="file" id="sheetBannerFile" accept="image/*" style="display:none" />
 <input type="file" id="dgFile" accept="image/*" style="display:none" />
+<input type="file" id="dgMultiFile" accept="image/*" multiple style="display:none" />
 
 <script>
 "use strict";
@@ -356,7 +357,7 @@ demo.days[SENTINEL] = {
   ocInspo:[ {id:"v1",url:"https://coolors.co/",note:"palette tool",done:false,added:"2026-06-01"} ],
   ocRpInfo:{ body:"Semi-literate to literate · replies within a few days · fade-to-black only · no permanent character death without discussion 💗", starters:"bakery meet-cutes · rivals stuck sharing one umbrella · found-family road trips" },
   ocJournals:[ {id:"j1",date:"2026-06-01",title:"Pep finally yelled at someone",ocIds:["oc1"],body:"RP recap: she defended Juniper's scones to a rude customer and then was embarrassed about it for three in-game days. Growth!"} ],
-  ocDesigns:[ {id:"d1",name:"moth librarian (unnamed)",status:"keep",designer:"@somebody",price:"$25",notes:"bought on impulse, zero regrets. needs a name and a tragic backstory."} ],
+  ocDesigns:[ {id:"d1",name:"moth librarian (unnamed)",status:"keep",designer:"@somebody",price:"$25",imgs:[],notes:"bought on impulse, zero regrets. needs a name and a tragic backstory."} ],
   ocStickies:[], ocLayouts:{},
 };
 
@@ -752,7 +753,7 @@ async function saveOCFromModal(){
   if(id){ await ocMut("ocs",a=>a.map(x=>x.id===id?{...x,...patch}:x)); state.selOC=id; }
   else { const nid=uid();
     const seed={id:nid,refs:[],trivia:[],gallery:[],ownLog:[],created_at:TODAY};
-    if(_sheetPrefill&&_sheetPrefill._designImg){ seed.gallery=[{id:uid(),url:_sheetPrefill._designImg,artist:patch.adopt.designer||"",date:TODAY}]; }
+    if(_sheetPrefill&&_sheetPrefill._designImgs&&_sheetPrefill._designImgs.length){ seed.gallery=_sheetPrefill._designImgs.map(u=>({id:uid(),url:u,artist:patch.adopt.designer||"",date:TODAY})); }
     await ocMut("ocs",a=>[...a,{...seed,...patch}]);
     if(_sheetPrefill&&_sheetPrefill._fromDesign){ await ocMut("ocDesigns",a=>a.filter(x=>x.id!==_sheetPrefill._fromDesign)); toast("They've stepped out of the shelf and into the world 🌱"); }
     state.selOC=nid; state.tab="chars"; }
@@ -1016,8 +1017,8 @@ function renderDesigns(){
   return `<div style="display:flex;flex-direction:column;gap:14px">
     <div class="panel"><div class="card-head"><h2 style="font-size:20px"><img class="ti" src="489178-pinkemojistaff.png" alt=""> My Designs</h2><button class="btn btn-pink" data-act="dgNew" ${RO?"disabled":""}>＋ add design</button></div>
       <p class="soft" style="font-size:12.5px;margin:0">designs you own that aren't full characters (yet) — adopts, MYOs, concepts — with credits and trade status 🏷️</p></div>
-    <div class="dg-grid">${ds.slice().reverse().map(d=>{const st=DG_STATUS[d.status]||null;return `<div class="gal-card">
-      <div class="dg-thumb" ${d.img?`style="background-image:url('${esc(d.img)}')"`:""} data-act="dgEdit" data-id="${d.id}">${d.img?"":"🎨"}</div>
+    <div class="dg-grid">${ds.slice().reverse().map(d=>{const st=DG_STATUS[d.status]||null;const n=[d.img,...(d.imgs||[])].filter(Boolean).length;return `<div class="gal-card">
+      <div class="dg-thumb" style="position:relative;${d.img?`background-image:url('${esc(d.img)}')`:""}" data-act="${n?"dgView":"dgEdit"}" data-id="${d.id}">${d.img?"":"🎨"}${n>1?`<span class="pill pill-lav" style="position:absolute;bottom:6px;right:6px">🗂️ ${n} files</span>`:""}</div>
       <div class="gal-body"><div style="display:flex;justify-content:space-between;gap:6px;align-items:baseline"><span style="font-size:13px;font-weight:600">${esc(d.name||"unnamed")}</span>${st?`<span class="pill ${st[1]}">${st[0]}</span>`:""}</div>
         ${d.designer?`<span style="font-size:11.5px">🎨 ${esc(d.designer)}</span>`:""}
         ${d.price?`<span class="label">worth ${esc(d.price)}</span>`:""}
@@ -1026,18 +1027,36 @@ function renderDesigns(){
       </div></div>`;}).join("")||`<div class="panel" style="grid-column:1/-1;text-align:center"><img class="deco" src="3937-molanglollipop.png" alt="" style="height:40px"/><p class="soft" style="font-size:13px;margin:6px 0 0">no designs shelved yet — adopts you collect can live here before they become full characters 🌱</p></div>`}</div>
   </div>`;
 }
-let _dgImg;
+let _dgImg, _dgImgs=[];
+function dgStrip(){
+  const row=document.getElementById("dgImgsRow"); if(!row)return;
+  row.innerHTML=_dgImgs.map((u,i)=>`<div style="position:relative;flex:0 0 auto"><img src="${esc(u)}" style="width:74px;height:74px;object-fit:cover;border-radius:10px;border:1px solid var(--line)"/><button data-dgx="${i}" style="position:absolute;top:-6px;right:-6px;border:none;background:rgba(0,0,0,.55);color:#fff;border-radius:999px;width:20px;height:20px;font-size:11px;line-height:1;cursor:pointer">×</button></div>`).join("")||`<span class="soft" style="font-size:11.5px">no extra files yet — adopts usually come with alts, refs and unwatermarked versions 🗂️</span>`;
+}
 function dgModal(d){
-  d=d||{}; _dgImg=undefined;
+  d=d||{}; _dgImg=undefined; _dgImgs=(d.imgs||[]).slice();
   document.getElementById("modal").innerHTML=`<div class="modal-bg" data-act="closeModal"><div class="panel" style="max-width:440px;width:100%;max-height:92vh;overflow:auto"><div class="card-head"><h3 style="font-size:16px">${d.id?"✏️ Edit":"🏷️ New"} design</h3><button class="btn" data-act="closeModal">✕</button></div>
     <input type="hidden" id="dg_id" value="${esc(d.id||"")}" />
     <div class="sheet-box" style="margin-top:6px"><h4>🖼️ The design</h4>
-      <div class="sheet-banner" id="dgImgBox" data-act="dgUpload" style="height:140px;${d.img?`background-image:url('${esc(d.img)}');border-style:solid;color:transparent`:""}">${d.img?"":"🖼️ tap to upload the design"}</div></div>
+      <div class="sheet-banner" id="dgImgBox" data-act="dgUpload" style="height:140px;${d.img?`background-image:url('${esc(d.img)}');border-style:solid;color:transparent`:""}">${d.img?"":"🖼️ tap to upload the cover"}</div></div>
+    <div class="sheet-box" style="margin-top:16px"><h4>🗂️ All files & versions</h4>
+      <div id="dgImgsRow" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"></div>
+      <button class="btn" data-act="dgMultiUpload" style="margin-top:10px" ${RO?"disabled":""}>＋ add files (you can pick several)</button></div>
     <div class="sheet-box" style="margin-top:16px"><h4>🏷️ Details & credits</h4>
       <div style="display:flex;gap:10px"><div class="grow"><div class="label">Name</div><input class="inp" id="dg_name" value="${esc(d.name||"")}" /></div><div style="width:150px"><div class="label">Status</div><select class="inp" id="dg_status">${Object.entries(DG_STATUS).map(([k,[l]])=>`<option value="${k}" ${d.status===k?"selected":""}>${l}</option>`).join("")}</select></div></div>
       <div style="display:flex;gap:10px;margin-top:8px"><div class="grow"><div class="label">Designed by</div><input class="inp" id="dg_designer" value="${esc(d.designer||"")}" /></div><div style="width:120px"><div class="label">Worth / price</div><input class="inp" id="dg_price" value="${esc(d.price||"")}" placeholder="$…" /></div></div>
       <div class="label" style="margin-top:8px">Notes (terms, ideas, vibes)</div><textarea class="inp" id="dg_notes" rows="3">${esc(d.notes||"")}</textarea></div>
     <button class="btn btn-pink" data-act="saveDg" style="margin-top:14px;width:100%">💾 save design</button>
+  </div></div>`;
+  dgStrip();
+}
+function dgViewModal(did){
+  const d=(SENT.ocDesigns||[]).find(x=>x.id===did); if(!d)return;
+  const all=[d.img,...(d.imgs||[])].filter(Boolean);
+  document.getElementById("modal").innerHTML=`<div class="modal-bg" data-act="closeModal"><div class="panel" style="max-width:760px;width:100%;max-height:94vh;overflow:auto">
+    <div class="card-head"><h3 style="font-size:16px">🗂️ ${esc(d.name||"design")} · ${all.length} file${all.length===1?"":"s"}</h3><div style="display:flex;gap:8px"><button class="btn" data-act="dgEdit" data-id="${d.id}" ${RO?"disabled":""}>✏️ edit</button><button class="btn" data-act="closeModal">✕</button></div></div>
+    ${d.designer?`<p class="soft" style="font-size:12px;margin:0 0 10px">🎨 designed by ${esc(d.designer)}</p>`:""}
+    ${all.map((u,i)=>`<div style="margin-bottom:14px"><img src="${esc(u)}" alt="" style="max-width:100%;max-height:64vh;display:block;margin:0 auto;border-radius:12px"/>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:6px">${i===0&&u===d.img?`<span class="pill pill-pink">cover</span>`:`<button class="btn" style="padding:3px 10px" data-act="dgCover" data-id="${d.id}" data-u="${esc(u)}" ${RO?"disabled":""}>⭐ make cover</button>`}${u!==d.img?`<button class="btn" style="padding:3px 10px" data-act="dgImgDel" data-id="${d.id}" data-u="${esc(u)}" ${RO?"disabled":""}>🗑</button>`:""}</div></div>`).join("")||`<p class="soft" style="font-size:13px">no files yet — hit ✏️ edit to add some 🖼️</p>`}
   </div></div>`;
 }
 
@@ -1096,7 +1115,7 @@ function renderStickies(){
 }
 
 /* ===================== EVENTS (one dispatcher for everything) ===================== */
-const WRITE_ACTS=["addOC","saveOC","delOC","editOC","mbAddImage","mbAddNote","mbAddColor","mbDel","mbUpload","loreNew","saveLore","loreDel","loreEdit","loreLink","addArc","arcStage","arcLink","beatAdd","beatDone","beatDel","arcDel","shipNew","saveShip","shipEdit","shipDel","ocIdeaAdd","ocIdeaDel","ideaToArc","ocInspoAdd","ocInspoDel","ocInspoDone","homeIdeaAdd","homeMin","homeHide","cardToggle","resetLayout","saveConfig","addSticky","delSticky","stickyColor","triviaAdd","triviaDel","ownAdd","ownDel","galAddUrl","galDel","galUpload","setPfp","setBanner","galDelG","pfpUpload","pfpClear","sheetPfp","sheetBanner","rpSave","jrNew","jrEdit","jrLink","saveJr","jrDel","dgNew","dgEdit","dgUpload","saveDg","dgDel","dgPromote"];
+const WRITE_ACTS=["addOC","saveOC","delOC","editOC","mbAddImage","mbAddNote","mbAddColor","mbDel","mbUpload","loreNew","saveLore","loreDel","loreEdit","loreLink","addArc","arcStage","arcLink","beatAdd","beatDone","beatDel","arcDel","shipNew","saveShip","shipEdit","shipDel","ocIdeaAdd","ocIdeaDel","ideaToArc","ocInspoAdd","ocInspoDel","ocInspoDone","homeIdeaAdd","homeMin","homeHide","cardToggle","resetLayout","saveConfig","addSticky","delSticky","stickyColor","triviaAdd","triviaDel","ownAdd","ownDel","galAddUrl","galDel","galUpload","setPfp","setBanner","galDelG","pfpUpload","pfpClear","sheetPfp","sheetBanner","rpSave","jrNew","jrEdit","jrLink","saveJr","jrDel","dgNew","dgEdit","dgUpload","dgMultiUpload","dgCover","dgImgDel","saveDg","dgDel","dgPromote"];
 document.addEventListener("click",async(e)=>{
   const el=e.target.closest("[data-act]"); if(!el)return; const act=el.dataset.act, id=el.dataset.id;
   if(RO && WRITE_ACTS.includes(act)){ toast("Demo mode — connect Supabase to save 🌸"); return; }
@@ -1198,11 +1217,16 @@ document.addEventListener("click",async(e)=>{
   if(act==="jrDel"){ if(!confirm("Delete this entry?"))return; await ocMut("ocJournals",a=>a.filter(x=>x.id!==id)); toast("Torn out, gently 🌙"); return render(); }
   if(act==="dgNew")return dgModal(null);
   if(act==="dgEdit")return dgModal((SENT.ocDesigns||[]).find(x=>x.id===id));
+  if(act==="dgView")return dgViewModal(id);
+  if(act==="dgCover"){ const u=el.dataset.u; await ocMut("ocDesigns",a=>a.map(x=>{ if(x.id!==id)return x; const imgs=[x.img,...(x.imgs||[])].filter(Boolean).filter(z=>z!==u); return {...x,img:u,imgs}; })); toast("Cover set ⭐"); dgViewModal(id); return render(); }
+  if(act==="dgImgDel"){ const u=el.dataset.u; await ocMut("ocDesigns",a=>a.map(x=>x.id===id?{...x,imgs:(x.imgs||[]).filter(z=>z!==u)}:x)); dgViewModal(id); return render(); }
+  if(act==="dgMultiUpload"){ const f=document.getElementById("dgMultiFile"); if(f){f.value="";f.click();} return; }
   if(act==="dgUpload"){ const f=document.getElementById("dgFile"); if(f){f.value="";f.click();} return; }
   if(act==="saveDg"){ const name=((document.getElementById("dg_name")||{}).value||"").trim(); if(!name){toast("Name the design 🌸");return;}
     const did=document.getElementById("dg_id").value;
     const patch={ name, status:document.getElementById("dg_status").value, designer:document.getElementById("dg_designer").value.trim(), price:document.getElementById("dg_price").value.trim(), notes:document.getElementById("dg_notes").value.trim() };
     if(_dgImg!==undefined)patch.img=_dgImg;
+    patch.imgs=_dgImgs.slice();
     if(did) await ocMut("ocDesigns",a=>a.map(x=>x.id===did?{...x,...patch}:x));
     else await ocMut("ocDesigns",a=>[...a,{id:uid(),added:TODAY,...patch}]);
     closeModal(); toast("Design shelved 🏷️"); return render(); }
@@ -1212,7 +1236,7 @@ document.addEventListener("click",async(e)=>{
        the design leaves My Designs only once the sheet is saved. */
     _sheetPrefill={ name:d.name||"", emoji:"🌱", pfp:d.img||"", summary:d.notes||"",
       adopt:{ designer:d.designer||"", designerUrl:"", from:"", date:d.added||"", method:"", price:d.price||"", terms:d.notes||"" },
-      _fromDesign:d.id, _designImg:d.img||"" };
+      _fromDesign:d.id, _designImgs:[d.img,...(d.imgs||[])].filter(Boolean) };
     state.editOC="new"; state.selOC=null; state.tab="chars"; toast("Sheet started from your design — fill in their world 🌱"); }
     return render(); }
 
@@ -1267,9 +1291,15 @@ document.addEventListener("change",e=>{
 });
 document.addEventListener("change",e=>{
   if(e.target&&e.target.id==="dgFile"&&e.target.files&&e.target.files[0]){ (async()=>{
-    try{ const {url}=await mbFileToDataURL(e.target.files[0]); _dgImg=url; const box=document.getElementById("dgImgBox"); if(box){box.style.backgroundImage=`url('${url}')`; box.style.borderStyle="solid"; box.style.color="transparent";} toast("Design ready — hit 💾 save"); }
+    try{ const {url}=await mbFileToDataURL(e.target.files[0]); _dgImg=url; const box=document.getElementById("dgImgBox"); if(box){box.style.backgroundImage=`url('${url}')`; box.style.borderStyle="solid"; box.style.color="transparent";} toast("Cover ready — hit 💾 save"); }
     catch(err){ toast("Couldn't read that image 🌸"); } })(); }
+  if(e.target&&e.target.id==="dgMultiFile"&&e.target.files&&e.target.files.length){ (async()=>{
+    let added=0;
+    for(const f of [...e.target.files]){ try{ const {url}=await mbFileToDataURL(f); _dgImgs.push(url); added++; }catch(err){ console.error(err); } }
+    dgStrip(); toast(added?("Added "+added+" file"+(added>1?"s":"")+" — hit 💾 save 🗂️"):"Couldn't read those 🌸"); })(); }
 });
+/* remove a pending design file from the editor strip */
+document.addEventListener("click",e=>{ const x=e.target.closest("[data-dgx]"); if(!x)return; if(RO){toast("Demo mode — connect Supabase to save 🌸");return;} _dgImgs.splice(parseInt(x.dataset.dgx),1); dgStrip(); });
 /* live star preview on the sheet's ability scores */
 document.addEventListener("input",e=>{ if(e.target&&e.target.dataset&&e.target.dataset.stat){ const s=document.getElementById("st_stars_"+e.target.dataset.stat); if(s)s.textContent=stars(e.target.value); } });
 /* Enter-key submits: input id → its add button */
