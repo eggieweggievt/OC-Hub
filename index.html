@@ -147,6 +147,7 @@
   .citem{background:#fff;border:1.5px solid var(--line-2);border-radius:12px;padding:9px;transition:.15s;cursor:grab;box-shadow:var(--shadow-sm);}
   .citem:hover{border-color:var(--pink);} .citem.dim{opacity:.35;} .citem.hit{border-color:var(--lav);}
   .drop-hot{outline:2px dashed var(--lav-deep);outline-offset:-2px;}
+  .file-hot{outline:3px dashed var(--pink)!important;outline-offset:-3px;border-radius:14px;background-color:rgba(244,159,198,.08)!important;}
   .drag-ghost{border-radius:8px;}
   /* ---- idea wall + inspiration vault ---- */
   .idea-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
@@ -626,7 +627,7 @@ function renderCharDetail(){
       ${(o.ownLog||[]).slice().reverse().map(t=>`<div style="display:flex;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px dashed var(--line)"><span class="label num" style="flex:0 0 76px">${esc(t.date||"")}</span><span class="grow" style="font-size:12.5px">${esc(t.text)}</span><button class="btn" style="padding:2px 8px" data-act="ownDel" data-id="${t.id}" ${RO?"disabled":""}>✕</button></div>`).join("")||`<p class="soft" style="font-size:12px;margin:0 0 6px">log purchases, transfers and proof notes here 🧾</p>`}
       <div style="display:flex;gap:8px;margin-top:8px"><input class="inp" id="ownText" placeholder="e.g. bought from @artist for $40, receipt saved…" ${RO?"disabled":""}/><button class="btn btn-pink" data-act="ownAdd" ${RO?"disabled":""}>＋</button></div>
     </div></details>
-    <div class="panel"><div class="card-head"><span class="label"><img class="ti" src="35911-pinkbow.png" alt=""> Art gallery · with artist credits</span>
+    <div class="panel" id="galPanel"><div class="card-head"><span class="label"><img class="ti" src="35911-pinkbow.png" alt=""> Art gallery · with artist credits · drag images here ✨</span>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <input class="inp" id="galUrl" placeholder="image URL…" style="width:150px" ${RO?"disabled":""}/>
         <input class="inp" id="galArtist" placeholder="artist credit" style="width:120px" ${RO?"disabled":""}/>
@@ -1017,7 +1018,7 @@ function renderDesigns(){
   return `<div style="display:flex;flex-direction:column;gap:14px">
     <div class="panel"><div class="card-head"><h2 style="font-size:20px"><img class="ti" src="489178-pinkemojistaff.png" alt=""> My Designs</h2><button class="btn btn-pink" data-act="dgNew" ${RO?"disabled":""}>＋ add design</button></div>
       <p class="soft" style="font-size:12.5px;margin:0">designs you own that aren't full characters (yet) — adopts, MYOs, concepts — with credits and trade status 🏷️</p></div>
-    <div class="dg-grid">${ds.slice().reverse().map(d=>{const st=DG_STATUS[d.status]||null;const n=[d.img,...(d.imgs||[])].filter(Boolean).length;return `<div class="gal-card">
+    <div class="dg-grid">${ds.slice().reverse().map(d=>{const st=DG_STATUS[d.status]||null;const n=[d.img,...(d.imgs||[])].filter(Boolean).length;return `<div class="gal-card" data-dgid="${d.id}">
       <div class="dg-thumb" style="position:relative;${d.img?`background-image:url('${esc(d.img)}')`:""}" data-act="${n?"dgView":"dgEdit"}" data-id="${d.id}">${d.img?"":"🎨"}${n>1?`<span class="pill pill-lav" style="position:absolute;bottom:6px;right:6px">🗂️ ${n} files</span>`:""}</div>
       <div class="gal-body"><div style="display:flex;justify-content:space-between;gap:6px;align-items:baseline"><span style="font-size:13px;font-weight:600">${esc(d.name||"unnamed")}</span>${st?`<span class="pill ${st[1]}">${st[0]}</span>`:""}</div>
         ${d.designer?`<span style="font-size:11.5px">🎨 ${esc(d.designer)}</span>`:""}
@@ -1492,6 +1493,55 @@ document.addEventListener("pointercancel",()=>{ resizeSticky=null; });
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
+})();
+
+/* ===== drag files straight in from your computer ✨ =====
+   gallery (on an open character) · ref board (lands where you drop it) ·
+   a design card or the design editor · the sheet's portrait/banner boxes */
+(function(){
+  const hasFiles=e=>{ try{ return [...((e.dataTransfer&&e.dataTransfer.types)||[])].includes("Files"); }catch(_){ return false; } };
+  function dropZone(t){
+    if(!t||!t.closest)return null;
+    let el;
+    if(el=t.closest("#sheetPort"))return {kind:"pfp",el};
+    if(el=t.closest("#sheetBan"))return {kind:"banner",el};
+    if(el=t.closest("#dgImgBox"))return {kind:"dgCover",el};
+    if(document.getElementById("dgImgsRow")&&t.closest(".modal-bg"))return {kind:"dgFiles",el:document.getElementById("dgImgsRow").closest(".sheet-box")};
+    if(el=t.closest("#ocBoard"))return {kind:"board",el};
+    if(el=t.closest("[data-dgid]"))return {kind:"design",el,id:el.getAttribute("data-dgid")};
+    if(state.tab==="chars"&&state.selOC&&!state.editOC){ const p=document.getElementById("galPanel"); if(p)return {kind:"gallery",el:p}; }
+    return null;
+  }
+  document.addEventListener("dragover",e=>{
+    if(!hasFiles(e))return; e.preventDefault(); try{e.dataTransfer.dropEffect="copy";}catch(_){}
+    document.querySelectorAll(".file-hot").forEach(x=>x.classList.remove("file-hot"));
+    const z=dropZone(e.target); if(z&&z.el)z.el.classList.add("file-hot");
+  });
+  document.addEventListener("dragleave",e=>{ if(!e.relatedTarget)document.querySelectorAll(".file-hot").forEach(x=>x.classList.remove("file-hot")); });
+  document.addEventListener("drop",async e=>{
+    if(!hasFiles(e))return; e.preventDefault();
+    document.querySelectorAll(".file-hot").forEach(x=>x.classList.remove("file-hot"));
+    const files=[...e.dataTransfer.files].filter(f=>/^image\//.test(f.type));
+    if(!files.length){ toast("Only images can be dropped in 🌸"); return; }
+    const z=dropZone(e.target);
+    if(!z){ toast("Drop onto a character's gallery or board, a design, or the sheet 🌸"); return; }
+    if(RO && (z.kind==="board"||z.kind==="gallery"||z.kind==="design")){ toast("Demo mode — connect Supabase to save 🌸"); return; }
+    try{
+      if(z.kind==="pfp"){ const {url}=await mbFileToDataURL(files[0]); _pend.pfp=url; const b=document.getElementById("sheetPort"); if(b){b.style.backgroundImage=`url('${url}')`;b.style.borderStyle="solid";b.style.color="transparent";} toast("Portrait ready — hit 💾 save"); return; }
+      if(z.kind==="banner"){ const {url}=await mbFileToDataURL(files[0]); _pend.banner=url; const b=document.getElementById("sheetBan"); if(b){b.style.backgroundImage=`url('${url}')`;b.style.borderStyle="solid";b.style.color="transparent";} toast("Banner ready — hit 💾 save"); return; }
+      if(z.kind==="dgCover"){ const {url}=await mbFileToDataURL(files[0]); _dgImg=url; const b=document.getElementById("dgImgBox"); if(b){b.style.backgroundImage=`url('${url}')`;b.style.borderStyle="solid";b.style.color="transparent";} toast("Cover ready — hit 💾 save"); return; }
+      if(z.kind==="dgFiles"){ for(const f of files){ const {url}=await mbFileToDataURL(f); _dgImgs.push(url); } dgStrip(); toast("Added "+files.length+" file"+(files.length>1?"s":"")+" — hit 💾 save 🗂️"); return; }
+      if(z.kind==="design"){ for(const f of files){ const {url}=await mbFileToDataURL(f); await ocMut("ocDesigns",a=>a.map(x=>x.id!==z.id?x:(x.img?{...x,imgs:[...(x.imgs||[]),url]}:{...x,img:url}))); } toast("Filed with the design 🗂️"); return render(); }
+      if(z.kind==="board"){ const r=z.el.getBoundingClientRect(); let i=0;
+        for(const f of files){ const {url,ar}=await mbFileToDataURL(f); const w=180,h=Math.max(100,Math.min(260,Math.round(180/ar)));
+          const x=Math.max(0,Math.min(e.clientX-r.left-w/2+i*16,r.width-w)), y=Math.max(0,Math.min(e.clientY-r.top-h/2+i*16,r.height-h));
+          await refMut(rr=>[...rr,{id:uid(),type:"img",url,x:Math.round(x),y:Math.round(y),w,h}]); i++; }
+        toast("Pinned right where you dropped it 📌"); return render(); }
+      if(z.kind==="gallery"){ const artist=((document.getElementById("galArtist")||{}).value||"").trim();
+        for(const f of files){ const {url}=await mbFileToDataURL(f); await ocPatch(state.selOC,o=>({...o,gallery:[...(o.gallery||[]),{id:uid(),url,artist,date:TODAY}]})); }
+        toast("Shelved "+files.length+" piece"+(files.length>1?"s":"")+" 🖼️"); return render(); }
+    }catch(err){ console.error(err); toast("Couldn't read that image 🌸"); }
+  });
 })();
 
 /* ===================== BOOT ===================== */
