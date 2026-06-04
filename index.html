@@ -2,7 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#fdf4fa" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="OC Hub" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" href="982602-holographicowner.png" />
+<link rel="apple-touch-icon" href="982602-holographicowner.png" />
 <title>OC Hub 🦄</title>
 <!-- =========================================================================
   OC Hub — a gentle candy-pastel home for original characters, for Eggie 🦄
@@ -100,7 +107,7 @@
   .check{width:18px;height:18px;border-radius:7px;border:2px solid var(--line-2);background:#fff;flex:none;} .check.on{background:var(--mint);border-color:var(--mint);}
   .chiptog{border:1.5px solid var(--line-2);border-radius:999px;padding:7px 14px;background:#fff;color:var(--ink-soft);font-size:13px;display:inline-flex;align-items:center;gap:8px;}
   .chiptog.on{background:#fde3f0;border-color:var(--pink);color:var(--pink-deep);}
-  details.acc{border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:var(--shadow-sm);margin-bottom:12px;overflow:hidden;}
+  details.acc{border:2px solid var(--line-2);border-radius:14px;background:var(--panel);box-shadow:var(--shadow-sm);margin-bottom:12px;overflow:hidden;}  /* matches the character-sheet boxes */
   details.acc>summary{list-style:none;cursor:pointer;padding:13px 16px;font-family:var(--display);font-size:15px;color:var(--ink);display:flex;align-items:center;justify-content:space-between;gap:8px;}
   details.acc>summary::-webkit-details-marker{display:none;}
   details.acc>summary::after{content:"▸";color:var(--muted);transition:transform .2s;}
@@ -217,6 +224,25 @@
     .check{min-width:20px;min-height:20px;}
     .hbtn,.chiptog,.btn{min-height:34px;}
     *{-webkit-tap-highlight-color:transparent;}
+    /* on touch, the nav scrolls sideways (pan-x) instead of locking for drag-reorder */
+    #nav .tab{touch-action:pan-x;}
+    .home-tools button,.home-resize{opacity:.85;}   /* no hover on touch — keep the grips visible */
+  }
+  /* ---- iPhone / iPad: notch + home-indicator safe areas, scrollable nav ---- */
+  #rail{padding-top:calc(10px + env(safe-area-inset-top));padding-left:calc(22px + env(safe-area-inset-left));padding-right:calc(22px + env(safe-area-inset-right));}
+  main{padding-bottom:calc(78px + env(safe-area-inset-bottom));}
+  #addStickyBtn{bottom:calc(16px + env(safe-area-inset-bottom));}
+  @media (max-width:880px){
+    nav{flex-wrap:nowrap;overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;}
+    nav::-webkit-scrollbar{display:none;}
+    #rail{gap:6px;}
+    #rail>div:first-child{min-width:0;flex:1 1 100%;}
+    .tab{flex:0 0 auto;white-space:nowrap;}
+    main{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right));}
+    .oc-hero-banner{height:120px;}
+    .oc-hero-ava{left:14px;}
+    .modal-bg{padding:10px;align-items:flex-end;}
+    .modal-bg .panel{max-height:86vh!important;}
   }
   /* ---- accessibility ---- */
   @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important;} }
@@ -635,10 +661,11 @@ function renderCharDetail(){
 }
 /* ===== full-page character sheet editor (D&D-sheet style) ===== */
 let _pend={};   // pending pfp/banner uploads before save
+let _sheetPrefill=null;   // set when a design from 🏷️ My Designs is being promoted
 function renderCharSheet(){
   const isNew=state.editOC==="new";
-  const o=isNew?{}:(ocById(state.editOC)||{}); const ad=o.adopt||{};
-  _pend={};
+  const o=isNew?(_sheetPrefill||{}):(ocById(state.editOC)||{}); const ad=o.adopt||{};
+  _pend={}; if(o.pfp&&isNew)_pend.pfp=o.pfp;   // carry the design's art into the new character
   const pal=(o.palette&&o.palette.length?o.palette:["#f49fc6","#9ec5f2","#a795e6","#f0cc88"]).slice(0,4);
   while(pal.length<4)pal.push("#ffffff");
   const F=(id2,lbl,val,ph)=>`<div class="grow" style="min-width:130px"><div class="label">${lbl}</div><input class="inp" id="${id2}" value="${esc(val||"")}" placeholder="${esc(ph||"")}" /></div>`;
@@ -723,8 +750,13 @@ async function saveOCFromModal(){
   if(_pend.pfp!==undefined)patch.pfp=_pend.pfp;
   if(_pend.banner!==undefined)patch.banner=_pend.banner;
   if(id){ await ocMut("ocs",a=>a.map(x=>x.id===id?{...x,...patch}:x)); state.selOC=id; }
-  else { const nid=uid(); await ocMut("ocs",a=>[...a,{id:nid,refs:[],trivia:[],gallery:[],ownLog:[],created_at:TODAY,...patch}]); state.selOC=nid; state.tab="chars"; }
-  _pend={}; state.editOC=null; closeModal(); toast("Sheet saved 💗"); render();
+  else { const nid=uid();
+    const seed={id:nid,refs:[],trivia:[],gallery:[],ownLog:[],created_at:TODAY};
+    if(_sheetPrefill&&_sheetPrefill._designImg){ seed.gallery=[{id:uid(),url:_sheetPrefill._designImg,artist:patch.adopt.designer||"",date:TODAY}]; }
+    await ocMut("ocs",a=>[...a,{...seed,...patch}]);
+    if(_sheetPrefill&&_sheetPrefill._fromDesign){ await ocMut("ocDesigns",a=>a.filter(x=>x.id!==_sheetPrefill._fromDesign)); toast("They've stepped out of the shelf and into the world 🌱"); }
+    state.selOC=nid; state.tab="chars"; }
+  _pend={}; _sheetPrefill=null; state.editOC=null; closeModal(); toast("Sheet saved 💗"); render();
 }
 async function ocPatch(id,fn){ await ocMut("ocs",a=>a.map(x=>x.id===id?fn({...x}):x)); }
 /* ---- ref board cards (stored on the character: oc.refs) ---- */
@@ -822,11 +854,12 @@ function loreModal(l){
   l=l||{}; const linked=l.linkedOcIds||[];
   document.getElementById("modal").innerHTML=`<div class="modal-bg" data-act="closeModal"><div class="panel" style="max-width:520px;width:100%;max-height:92vh;overflow:auto"><div class="card-head"><h3 style="font-size:16px">${l.id?"✏️ Edit":"📖 New"} lore</h3><button class="btn" data-act="closeModal">✕</button></div>
     <input type="hidden" id="lo_id" value="${esc(l.id||"")}" />
-    <div class="label">Title</div><input class="inp" id="lo_title" value="${esc(l.title||"")}" />
-    <div class="label" style="margin-top:8px">The lore</div><textarea class="inp" id="lo_body" rows="7">${esc(l.body||"")}</textarea>
-    <div class="label" style="margin-top:8px">Tags (comma separated)</div><input class="inp" id="lo_tags" value="${esc((l.tags||[]).join(", "))}" placeholder="setting, magic, history" />
-    <div class="label" style="margin-top:8px">Characters in this</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${(SENT.ocs||[]).map(o=>`<button class="chiptog ${linked.includes(o.id)?'on':''}" data-act="loreLink" data-id="${o.id}"><span class="check ${linked.includes(o.id)?'on':''}"></span>${o.emoji||"🎭"} ${esc(o.name)}</button>`).join("")||`<span class="soft" style="font-size:12px">no characters yet</span>`}</div>
+    <div class="sheet-box" style="margin-top:6px"><h4>📖 The entry</h4>
+      <div class="label">Title</div><input class="inp" id="lo_title" value="${esc(l.title||"")}" />
+      <div class="label" style="margin-top:8px">The lore</div><textarea class="inp" id="lo_body" rows="7">${esc(l.body||"")}</textarea>
+      <div class="label" style="margin-top:8px">Tags (comma separated)</div><input class="inp" id="lo_tags" value="${esc((l.tags||[]).join(", "))}" placeholder="setting, magic, history" /></div>
+    <div class="sheet-box" style="margin-top:16px"><h4>🎭 Cast</h4>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${(SENT.ocs||[]).map(o=>`<button class="chiptog ${linked.includes(o.id)?'on':''}" data-act="loreLink" data-id="${o.id}"><span class="check ${linked.includes(o.id)?'on':''}"></span>${o.emoji||"🎭"} ${esc(o.name)}</button>`).join("")||`<span class="soft" style="font-size:12px">no characters yet</span>`}</div></div>
     <button class="btn btn-pink" data-act="saveLore" style="margin-top:14px;width:100%">💾 save lore</button>
   </div></div>`;
 }
@@ -862,14 +895,15 @@ function arcModal(a){
   if(!a)return;
   const linked=a.ocIds||[];
   document.getElementById("modal").innerHTML=`<div class="modal-bg" data-act="closeModal"><div class="panel" style="max-width:500px;width:100%;max-height:92vh;overflow:auto"><div class="card-head"><h3 style="font-size:16px">📚 ${esc(a.title)}</h3><button class="btn" data-act="closeModal">✕</button></div>
-    <div class="label">Title</div><input class="inp" id="arc_title" value="${esc(a.title)}" data-arcid="${a.id}" ${RO?"disabled":""}/>
-    <div class="label" style="margin-top:10px">Stage</div>
-    <div class="seg" style="margin-top:4px">${ARC_STAGES.map(([k,l])=>`<button class="${a.stage===k?'on':''}" data-act="arcStage" data-id="${a.id}" data-v="${k}" ${RO?"disabled":""}>${l}</button>`).join("")}</div>
-    <div class="label" style="margin-top:12px">Who's in it</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${(SENT.ocs||[]).map(o=>`<button class="chiptog ${linked.includes(o.id)?'on':''}" data-act="arcLink" data-id="${a.id}" data-oc="${o.id}" ${RO?"disabled":""}><span class="check ${linked.includes(o.id)?'on':''}"></span>${o.emoji||"🎭"} ${esc(o.name)}</button>`).join("")}</div>
-    <div class="label" style="margin-top:12px">Story beats</div>
-    ${(a.beats||[]).map(b=>`<div style="display:flex;gap:8px;align-items:center;padding:4px 0"><button class="check ${b.done?'on':''}" data-act="beatDone" data-id="${a.id}" data-bid="${b.id}" ${RO?"disabled":""}></button><span class="grow" style="font-size:12.5px;${b.done?'text-decoration:line-through;color:var(--muted)':''}">${esc(b.text)}</span><button class="btn" style="padding:2px 8px" data-act="beatDel" data-id="${a.id}" data-bid="${b.id}" ${RO?"disabled":""}>✕</button></div>`).join("")}
-    <div style="display:flex;gap:8px;margin-top:8px"><input class="inp" id="newBeat" placeholder="next beat…" ${RO?"disabled":""}/><button class="btn btn-pink" data-act="beatAdd" data-id="${a.id}" ${RO?"disabled":""}>＋</button></div>
+    <div class="sheet-box" style="margin-top:6px"><h4>📚 The arc</h4>
+      <div class="label">Title</div><input class="inp" id="arc_title" value="${esc(a.title)}" data-arcid="${a.id}" ${RO?"disabled":""}/>
+      <div class="label" style="margin-top:10px">Stage</div>
+      <div class="seg" style="margin-top:4px">${ARC_STAGES.map(([k,l])=>`<button class="${a.stage===k?'on':''}" data-act="arcStage" data-id="${a.id}" data-v="${k}" ${RO?"disabled":""}>${l}</button>`).join("")}</div></div>
+    <div class="sheet-box" style="margin-top:16px"><h4>🎭 Who's in it</h4>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${(SENT.ocs||[]).map(o=>`<button class="chiptog ${linked.includes(o.id)?'on':''}" data-act="arcLink" data-id="${a.id}" data-oc="${o.id}" ${RO?"disabled":""}><span class="check ${linked.includes(o.id)?'on':''}"></span>${o.emoji||"🎭"} ${esc(o.name)}</button>`).join("")}</div></div>
+    <div class="sheet-box" style="margin-top:16px"><h4>✨ Story beats</h4>
+      ${(a.beats||[]).map(b=>`<div style="display:flex;gap:8px;align-items:center;padding:4px 0"><button class="check ${b.done?'on':''}" data-act="beatDone" data-id="${a.id}" data-bid="${b.id}" ${RO?"disabled":""}></button><span class="grow" style="font-size:12.5px;${b.done?'text-decoration:line-through;color:var(--muted)':''}">${esc(b.text)}</span><button class="btn" style="padding:2px 8px" data-act="beatDel" data-id="${a.id}" data-bid="${b.id}" ${RO?"disabled":""}>✕</button></div>`).join("")}
+      <div style="display:flex;gap:8px;margin-top:8px"><input class="inp" id="newBeat" placeholder="next beat…" ${RO?"disabled":""}/><button class="btn btn-pink" data-act="beatAdd" data-id="${a.id}" ${RO?"disabled":""}>＋</button></div></div>
     <div style="display:flex;justify-content:space-between;margin-top:14px"><button class="btn" data-act="arcDel" data-id="${a.id}" ${RO?"disabled":""}>🗑 delete arc</button><button class="btn btn-pink" data-act="closeModal">done</button></div>
   </div></div>`;
 }
@@ -900,10 +934,11 @@ function shipModal(s){
   const sel=(idName,val)=>`<select class="inp" id="${idName}">${(SENT.ocs||[]).map(o=>`<option value="${o.id}" ${o.id===val?"selected":""}>${o.emoji||"🎭"} ${esc(o.name)}</option>`).join("")}</select>`;
   document.getElementById("modal").innerHTML=`<div class="modal-bg" data-act="closeModal"><div class="panel" style="max-width:420px;width:100%"><div class="card-head"><h3 style="font-size:16px">${s.id?"✏️ Edit":"💞 New"} ship</h3><button class="btn" data-act="closeModal">✕</button></div>
     <input type="hidden" id="sh_id" value="${esc(s.id||"")}" />
-    <div style="display:flex;gap:10px"><div class="grow"><div class="label">Character A</div>${sel("sh_a",s.aId)}</div><div class="grow"><div class="label">Character B</div>${sel("sh_b",s.bId)}</div></div>
-    <div class="label" style="margin-top:8px">Kind of bond</div><select class="inp" id="sh_type">${SHIP_TYPES.map(t=>`<option ${s.type===t?"selected":""}>${t}</option>`).join("")}</select>
-    <div class="label" style="margin-top:8px">Trust level · ${s.trust!=null&&s.trust!==""?s.trust:5}/10</div><input type="range" id="sh_trust" min="0" max="10" step="1" value="${s.trust!=null&&s.trust!==""?s.trust:5}" style="width:100%;accent-color:var(--pink)" />
-    <div class="label" style="margin-top:8px">Notes</div><textarea class="inp" id="sh_notes" rows="3">${esc(s.notes||"")}</textarea>
+    <div class="sheet-box" style="margin-top:6px"><h4>💞 The bond</h4>
+      <div style="display:flex;gap:10px"><div class="grow"><div class="label">Character A</div>${sel("sh_a",s.aId)}</div><div class="grow"><div class="label">Character B</div>${sel("sh_b",s.bId)}</div></div>
+      <div class="label" style="margin-top:8px">Kind of bond</div><select class="inp" id="sh_type">${SHIP_TYPES.map(t=>`<option ${s.type===t?"selected":""}>${t}</option>`).join("")}</select>
+      <div class="label" style="margin-top:8px">Trust level · ${s.trust!=null&&s.trust!==""?s.trust:5}/10</div><input type="range" id="sh_trust" min="0" max="10" step="1" value="${s.trust!=null&&s.trust!==""?s.trust:5}" style="width:100%;accent-color:var(--pink)" />
+      <div class="label" style="margin-top:8px">Notes</div><textarea class="inp" id="sh_notes" rows="3">${esc(s.notes||"")}</textarea></div>
     <button class="btn btn-pink" data-act="saveShip" style="margin-top:14px;width:100%">💾 save ship</button>
   </div></div>`;
 }
@@ -931,15 +966,17 @@ function renderIdeas(){
 function renderRpInfo(){
   const rp=SENT.ocRpInfo||{};
   const ocs=SENT.ocs||[];
-  return `<div style="max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
-    <div class="panel"><div class="card-head"><h2 style="font-size:20px"><img class="ti" src="4901_roleplay.png" alt=""> RP Info</h2><button class="btn btn-pink" data-act="rpSave" ${RO?"disabled":""}>💾 save</button></div>
-      <div class="label" style="margin-bottom:4px">Rules, preferences & limits</div>
+  return `<div class="sheet" style="max-width:860px">
+    <div class="card-head"><h2 style="font-size:20px"><img class="ti" src="4901_roleplay.png" alt=""> RP Info</h2><button class="btn btn-pink" data-act="rpSave" ${RO?"disabled":""}>💾 save</button></div>
+    <div class="sheet-box"><h4>📜 Rules, preferences & limits</h4>
       <textarea class="inp" id="rpBody" rows="8" placeholder="how you RP: platforms, response pace, comfort zones, hard limits, who to contact…" ${RO?"disabled":""}>${esc(rp.body||"")}</textarea>
-      <div class="label" style="margin:10px 0 4px">Starters & prompts you love</div>
+    </div>
+    <div class="sheet-box"><h4>✨ Starters & prompts you love</h4>
       <textarea class="inp" id="rpStarters" rows="4" placeholder="scenarios, dynamics and tropes you're always up for…" ${RO?"disabled":""}>${esc(rp.starters||"")}</textarea>
     </div>
-    <div class="panel"><div class="card-head"><span class="label">Who's open right now</span><span class="label">set per character on their sheet</span></div>
+    <div class="sheet-box"><h4>🎭 Who's open right now</h4>
       ${ocs.map(o=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)">${avaHTML(o,30,15)}<span class="grow" style="font-size:13px;font-weight:600">${esc(o.name)}</span>${rpPill(o)||`<span class="pill pill-gray">unset</span>`}</div>`).join("")||`<p class="soft" style="font-size:12.5px;margin:0">no characters yet 🌙</p>`}
+      <p class="soft" style="font-size:11px;margin:8px 0 0">set per character on their sheet</p>
     </div>
   </div>`;
 }
@@ -963,10 +1000,11 @@ function jrModal(j){
   j=j||{};
   document.getElementById("modal").innerHTML=`<div class="modal-bg" data-act="closeModal"><div class="panel" style="max-width:520px;width:100%;max-height:92vh;overflow:auto"><div class="card-head"><h3 style="font-size:16px">${j.id?"✏️ Edit":"📔 New"} journal entry</h3><button class="btn" data-act="closeModal">✕</button></div>
     <input type="hidden" id="jr_id" value="${esc(j.id||"")}" />
-    <div style="display:flex;gap:10px"><div class="grow"><div class="label">Title</div><input class="inp" id="jr_title" value="${esc(j.title||"")}" /></div><div style="width:140px"><div class="label">Date</div><input class="inp" id="jr_date" type="date" value="${esc(j.date||TODAY)}" /></div></div>
-    <div class="label" style="margin-top:8px">Entry</div><textarea class="inp" id="jr_body" rows="8">${esc(j.body||"")}</textarea>
-    <div class="label" style="margin-top:8px">Who it's about</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${(SENT.ocs||[]).map(o=>`<button class="chiptog ${_jrLinks.includes(o.id)?'on':''}" data-act="jrLink" data-id="${o.id}"><span class="check ${_jrLinks.includes(o.id)?'on':''}"></span>${o.emoji||"🎭"} ${esc(o.name)}</button>`).join("")}</div>
+    <div class="sheet-box" style="margin-top:6px"><h4>📔 The entry</h4>
+      <div style="display:flex;gap:10px"><div class="grow"><div class="label">Title</div><input class="inp" id="jr_title" value="${esc(j.title||"")}" /></div><div style="width:140px"><div class="label">Date</div><input class="inp" id="jr_date" type="date" value="${esc(j.date||TODAY)}" /></div></div>
+      <div class="label" style="margin-top:8px">Entry</div><textarea class="inp" id="jr_body" rows="8">${esc(j.body||"")}</textarea></div>
+    <div class="sheet-box" style="margin-top:16px"><h4>🎭 Who it's about</h4>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${(SENT.ocs||[]).map(o=>`<button class="chiptog ${_jrLinks.includes(o.id)?'on':''}" data-act="jrLink" data-id="${o.id}"><span class="check ${_jrLinks.includes(o.id)?'on':''}"></span>${o.emoji||"🎭"} ${esc(o.name)}</button>`).join("")}</div></div>
     <button class="btn btn-pink" data-act="saveJr" style="margin-top:14px;width:100%">💾 save entry</button>
   </div></div>`;
 }
@@ -984,7 +1022,7 @@ function renderDesigns(){
         ${d.designer?`<span style="font-size:11.5px">🎨 ${esc(d.designer)}</span>`:""}
         ${d.price?`<span class="label">worth ${esc(d.price)}</span>`:""}
         ${d.notes?`<span class="soft" style="font-size:11.5px">${esc(d.notes)}</span>`:""}
-        <div style="display:flex;gap:6px;margin-top:4px"><button class="btn" style="padding:3px 9px" data-act="dgEdit" data-id="${d.id}" ${RO?"disabled":""}>✏️</button><button class="btn" style="padding:3px 9px" data-act="dgPromote" data-id="${d.id}" ${RO?"disabled":""} title="turn into a full character">🌱</button><button class="btn" style="padding:3px 9px" data-act="dgDel" data-id="${d.id}" ${RO?"disabled":""}>🗑</button></div>
+        <div style="display:flex;gap:6px;margin-top:4px"><button class="btn" style="padding:3px 9px" data-act="dgEdit" data-id="${d.id}" ${RO?"disabled":""}>✏️</button><button class="btn btn-pink" style="padding:3px 9px" data-act="dgPromote" data-id="${d.id}" ${RO?"disabled":""} title="opens a character sheet pre-filled from this design">🌱 make character</button><button class="btn" style="padding:3px 9px" data-act="dgDel" data-id="${d.id}" ${RO?"disabled":""}>🗑</button></div>
       </div></div>`;}).join("")||`<div class="panel" style="grid-column:1/-1;text-align:center"><img class="deco" src="3937-molanglollipop.png" alt="" style="height:40px"/><p class="soft" style="font-size:13px;margin:6px 0 0">no designs shelved yet — adopts you collect can live here before they become full characters 🌱</p></div>`}</div>
   </div>`;
 }
@@ -993,10 +1031,12 @@ function dgModal(d){
   d=d||{}; _dgImg=undefined;
   document.getElementById("modal").innerHTML=`<div class="modal-bg" data-act="closeModal"><div class="panel" style="max-width:440px;width:100%;max-height:92vh;overflow:auto"><div class="card-head"><h3 style="font-size:16px">${d.id?"✏️ Edit":"🏷️ New"} design</h3><button class="btn" data-act="closeModal">✕</button></div>
     <input type="hidden" id="dg_id" value="${esc(d.id||"")}" />
-    <div class="sheet-banner" id="dgImgBox" data-act="dgUpload" style="height:140px;${d.img?`background-image:url('${esc(d.img)}');border-style:solid;color:transparent`:""}">${d.img?"":"🖼️ tap to upload the design"}</div>
-    <div style="display:flex;gap:10px;margin-top:10px"><div class="grow"><div class="label">Name</div><input class="inp" id="dg_name" value="${esc(d.name||"")}" /></div><div style="width:150px"><div class="label">Status</div><select class="inp" id="dg_status">${Object.entries(DG_STATUS).map(([k,[l]])=>`<option value="${k}" ${d.status===k?"selected":""}>${l}</option>`).join("")}</select></div></div>
-    <div style="display:flex;gap:10px;margin-top:8px"><div class="grow"><div class="label">Designed by</div><input class="inp" id="dg_designer" value="${esc(d.designer||"")}" /></div><div style="width:120px"><div class="label">Worth / price</div><input class="inp" id="dg_price" value="${esc(d.price||"")}" placeholder="$…" /></div></div>
-    <div class="label" style="margin-top:8px">Notes (terms, ideas, vibes)</div><textarea class="inp" id="dg_notes" rows="3">${esc(d.notes||"")}</textarea>
+    <div class="sheet-box" style="margin-top:6px"><h4>🖼️ The design</h4>
+      <div class="sheet-banner" id="dgImgBox" data-act="dgUpload" style="height:140px;${d.img?`background-image:url('${esc(d.img)}');border-style:solid;color:transparent`:""}">${d.img?"":"🖼️ tap to upload the design"}</div></div>
+    <div class="sheet-box" style="margin-top:16px"><h4>🏷️ Details & credits</h4>
+      <div style="display:flex;gap:10px"><div class="grow"><div class="label">Name</div><input class="inp" id="dg_name" value="${esc(d.name||"")}" /></div><div style="width:150px"><div class="label">Status</div><select class="inp" id="dg_status">${Object.entries(DG_STATUS).map(([k,[l]])=>`<option value="${k}" ${d.status===k?"selected":""}>${l}</option>`).join("")}</select></div></div>
+      <div style="display:flex;gap:10px;margin-top:8px"><div class="grow"><div class="label">Designed by</div><input class="inp" id="dg_designer" value="${esc(d.designer||"")}" /></div><div style="width:120px"><div class="label">Worth / price</div><input class="inp" id="dg_price" value="${esc(d.price||"")}" placeholder="$…" /></div></div>
+      <div class="label" style="margin-top:8px">Notes (terms, ideas, vibes)</div><textarea class="inp" id="dg_notes" rows="3">${esc(d.notes||"")}</textarea></div>
     <button class="btn btn-pink" data-act="saveDg" style="margin-top:14px;width:100%">💾 save design</button>
   </div></div>`;
 }
@@ -1004,29 +1044,30 @@ function dgModal(d){
 /* ===================== SETTINGS ===================== */
 function renderSettings(){
   const calm=localStorage.getItem("oc-calm")==="1", big=localStorage.getItem("oc-text")==="1", locked=localStorage.getItem("oc-layout-locked")==="1";
-  return `<div style="max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
+  return `<div class="sheet" style="max-width:780px">
     <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px"><h2 style="font-size:22px;font-family:var(--display)">⚙️ Settings</h2><span class="label">everything in one cozy place 🌸</span></div>
-    <div class="panel"><div class="card-head"><h2 style="font-size:17px">🌙 Comfort & display</h2><div style="display:flex;align-items:center;gap:8px"><img class="deco" src="3672-sanrio-bandaid.png" alt="" style="height:26px"/><span class="label">stays on this device</span></div></div>
+    <div class="sheet-box"><h4>🌙 Comfort & display</h4>
+      <div style="display:flex;justify-content:flex-end"><img class="deco" src="3672-sanrio-bandaid.png" alt="" style="height:26px"/></div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <button class="chiptog ${calm?'on':''}" data-act="setCalm"><span class="check ${calm?'on':''}"></span>🌙 Calm mode — stop motion + soften colours</button>
         <button class="chiptog ${big?'on':''}" data-act="setText"><span class="check ${big?'on':''}"></span>🔠 Larger text</button>
       </div>
-      <p class="soft" style="font-size:11.5px;margin:10px 0 0">Your device's "reduce motion" setting is always honoured too.</p>
+      <p class="soft" style="font-size:11.5px;margin:10px 0 0">Stays on this device · your "reduce motion" setting is always honoured too.</p>
     </div>
-    <div class="panel"><div class="card-head"><h2 style="font-size:17px">🦄 You & this hub</h2><span class="label">saved to your account</span></div>
+    <div class="sheet-box"><h4>🦄 You & this hub</h4>
       <div style="display:flex;gap:10px;flex-wrap:wrap"><div class="grow" style="min-width:140px"><div class="label">Name</div><input class="inp" id="cf_name" value="${esc(CONFIG.creator.name)}"/></div><div style="width:90px"><div class="label">Emoji</div><input class="inp" id="cf_emoji" value="${esc(CONFIG.creator.emoji)}"/></div></div>
       <div class="label" style="margin-top:8px">Main OS link (the 🐙 chip up top)</div><input class="inp" id="cf_mainos" value="${esc(CONFIG.mainOs)}"/>
       <button class="btn btn-pink" data-act="saveConfig" style="margin-top:12px" ${RO?"disabled":""}>💾 save</button>
     </div>
-    <div class="panel"><div class="card-head"><h2 style="font-size:17px">🧩 Layout</h2></div>
+    <div class="sheet-box"><h4>🧩 Layout</h4>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="chiptog ${locked?'on':''}" data-act="toggleLock"><span class="check ${locked?'on':''}"></span>${locked?'🔒 layout locked':'🔓 layout unlocked'}</button>
         <button class="btn" data-act="resetLayout" ${RO?"disabled":""}>↺ reset layout (tabs + cards)</button>
       </div>
       <p class="soft" style="font-size:11.5px;margin:10px 0 0">Lock keeps cards from wiggling while you tap · reset puts every page back to its defaults.</p>
     </div>
-    <div class="panel"><div class="card-head"><h2 style="font-size:17px">💾 Data</h2><span class="chip ${DEMO?'demo':'on'}">${DEMO?'demo data':'● live · synced'}</span></div>
-      <button class="btn" data-act="exportData">⬇️ export all my OC data (backup)</button>
+    <div class="sheet-box"><h4>💾 Data</h4>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" data-act="exportData">⬇️ export all my OC data (backup)</button><span class="chip ${DEMO?'demo':'on'}">${DEMO?'demo data':'● live · synced'}</span></div>
       <p class="soft" style="font-size:11.5px;margin:10px 0 0">Shares the main OS's Supabase project — all hub data lives under oc-prefixed keys, so the two never collide. ${DEMO?"Connect Supabase keys in CONFIG to go live.":"Connected & syncing."}</p>
     </div>
   </div>`;
@@ -1066,11 +1107,11 @@ document.addEventListener("click",async(e)=>{
   if(act==="copyText"){ if(navigator.clipboard)navigator.clipboard.writeText(el.dataset.t); toast("Copied 💗"); return; }
 
   /* characters */
-  if(act==="addOC"){ state.editOC="new"; state.selOC=null; state.tab="chars"; return render(); }
+  if(act==="addOC"){ _sheetPrefill=null; state.editOC="new"; state.selOC=null; state.tab="chars"; return render(); }
   if(act==="openOC"){ state.selOC=id; state.editOC=null; state.tab="chars"; return render(); }
   if(act==="backToChars"){ state.selOC=null; state.editOC=null; return render(); }
   if(act==="editOC"){ state.editOC=id; return render(); }
-  if(act==="sheetCancel"){ _pend={}; state.editOC=null; return render(); }
+  if(act==="sheetCancel"){ _pend={}; _sheetPrefill=null; state.editOC=null; return render(); }
   if(act==="sheetPfp"){ const f=document.getElementById("sheetPfpFile"); if(f){f.value="";f.click();} return; }
   if(act==="sheetBanner"){ const f=document.getElementById("sheetBannerFile"); if(f){f.value="";f.click();} return; }
   if(act==="saveOC")return saveOCFromModal();
@@ -1166,10 +1207,14 @@ document.addEventListener("click",async(e)=>{
     else await ocMut("ocDesigns",a=>[...a,{id:uid(),added:TODAY,...patch}]);
     closeModal(); toast("Design shelved 🏷️"); return render(); }
   if(act==="dgDel"){ await ocMut("ocDesigns",a=>a.filter(x=>x.id!==id)); toast("Removed"); return render(); }
-  if(act==="dgPromote"){ const d=(SENT.ocDesigns||[]).find(x=>x.id===id); if(d){ const nid=uid();
-    await ocMut("ocs",a=>[...a,{id:nid,name:d.name||"new character",emoji:"🌱",pfp:d.img||"",refs:[],trivia:[],gallery:d.img?[{id:uid(),url:d.img,artist:d.designer||"",date:TODAY}]:[],ownLog:[],adopt:{designer:d.designer||"",price:d.price||"",terms:d.notes||""},created_at:TODAY}]);
-    await ocMut("ocDesigns",a=>a.filter(x=>x.id!==id));
-    state.selOC=nid; state.tab="chars"; toast("They're a whole character now 🌱"); } return render(); }
+  if(act==="dgPromote"){ const d=(SENT.ocDesigns||[]).find(x=>x.id===id); if(d){
+    /* open a fresh character sheet pre-filled from the design — build their world, then 💾 save.
+       the design leaves My Designs only once the sheet is saved. */
+    _sheetPrefill={ name:d.name||"", emoji:"🌱", pfp:d.img||"", summary:d.notes||"",
+      adopt:{ designer:d.designer||"", designerUrl:"", from:"", date:d.added||"", method:"", price:d.price||"", terms:d.notes||"" },
+      _fromDesign:d.id, _designImg:d.img||"" };
+    state.editOC="new"; state.selOC=null; state.tab="chars"; toast("Sheet started from your design — fill in their world 🌱"); }
+    return render(); }
 
   /* layout + settings */
   if(act==="homeMin"){ const k=el.dataset.w, g=el.closest(".grid-modular"), tab=g?g.dataset.tab:"home"; await setLayout(tab,L=>{L.min=Object.assign({},L.min,{[k]:!L.min[k]});}); return render(); }
@@ -1422,6 +1467,7 @@ document.addEventListener("pointercancel",()=>{ resizeSticky=null; });
 /* ===================== BOOT ===================== */
 applySettings();
 render();
+if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("sw.js").catch(function(){}); }catch(e){} }
 </script>
 <!-- ===================== PET WIDGET (Eugene visits the OC hub too) ===================== -->
 <script src="pet-widget.js"></script>
