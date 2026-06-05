@@ -16,8 +16,9 @@
   OC Hub — a gentle candy-pastel home for original characters, for Eggie 🦄
   Characters · lore · story arcs · ships · idea wall · per-OC ref boards.
   Built on the Eggie-OS foundation: one file, vanilla JS, Supabase storage.
-  Shares the same Supabase project as the main OS; ALL data here lives under
-  oc-prefixed keys on the sentinel daily_logs row (log_date 2000-01-01).
+  Shares the Supabase PROJECT with the main OS but nothing else: this app's data
+  lives under its own user_id ("ochub") on its own sentinel row — the main OS's
+  rows (user_id "eggie") are never written by this app.
 ========================================================================== -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Fredoka:wght@500;600&display=swap" rel="stylesheet" />
@@ -33,11 +34,8 @@
     --r:18px; --sans:"Quicksand",ui-rounded,"SF Pro Rounded",system-ui,sans-serif; --display:"Fredoka",var(--sans);
   }
   *{box-sizing:border-box;} html,body{margin:0;padding:0;}
-  /* never let a stray wide element widen the page — keeps `main` truly centered (iPad portrait fix).
-     html takes overflow-x:hidden (it's the real scroller); body uses CLIP, which is NOT a scroll
-     container — otherwise body+overscroll-behavior swallows mouse-wheel scrolling on Windows. */
-  html{width:100%;max-width:100%;overflow-x:hidden;}
-  body{width:100%;max-width:100%;overflow-x:clip;}
+  /* never let a stray wide element widen the page — keeps `main` truly centered (iPad portrait fix) */
+  html,body{width:100%;max-width:100%;overflow-x:hidden;}
   main{overflow-x:clip;}
   body{background:var(--bg);background-image:radial-gradient(80% 50% at 100% 0%,#fbdff0 0%,transparent 60%),radial-gradient(70% 50% at 0% 0%,#ddeafc 0%,transparent 55%),radial-gradient(60% 40% at 50% 100%,#efe6fb 0%,transparent 60%);background-attachment:fixed;color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;font-weight:500;-webkit-font-smoothing:antialiased;min-height:100vh;}
   /* her unicorn-sky art, muted, behind everything */
@@ -268,7 +266,7 @@
   }
   /* ---- native-app feel ---- */
   *{-webkit-tap-highlight-color:transparent;}
-  html{overscroll-behavior-y:none;}            /* no whole-page rubber-band — on the real scroller, so wheel chaining stays alive */
+  body{overscroll-behavior-y:none;}            /* no whole-page rubber-band */
   nav,.kanban{overscroll-behavior-x:contain;}  /* inner swipes don't yank the page */
   .btn,.chip,.chiptog,.hbtn,.seg>button,.check,.pill,.tab{touch-action:manipulation;}  /* no dbl-tap-zoom delay (drag handles keep touch-action:none) */
   #nav .tab{touch-action:pan-x;}               /* re-assert after the manipulation rule above */
@@ -314,7 +312,7 @@
 const CONFIG = {
   url: "https://clpfyxlenotepuceczbh.supabase.co",
   anonKey: "sb_publishable_TC-7HVpzQdxwS7DUMr7zwQ_rmJyjcV2",
-  userId: "eggie",
+  userId: "ochub",        // this app's OWN identity — the main OS owns "eggie"; they share nothing
   readOnly: false,
   mainOs: "https://eggieweggievt.github.io/Eggie-Personal-OS/",
   creator: { name:"Eggie", emoji:"🦄" },
@@ -328,11 +326,14 @@ let RO = CONFIG.readOnly || DEMO;
 const SB = (!DEMO && window.supabase) ? window.supabase.createClient(CONFIG.url, CONFIG.anonKey) : null;
 const UID = CONFIG.userId;
 const TODAY = new Date().toLocaleDateString("en-CA");
-/* OC Hub's OWN storage row. The main OS reads/writes "2000-01-01" as a whole blob,
-   so sharing it meant a stale Eggie-OS tab could overwrite OC data (it did, once).
-   "2000-01-02" belongs to this hub alone — the two apps can never clobber each other again. */
+/* OC Hub's OWN storage identity: user_id "ochub" + its own sentinel row. The main OS owns
+   user_id "eggie" and reads/writes its rows as whole blobs — sharing ANY row with it meant a
+   stale tab on either side could overwrite the other (it happened in both directions).
+   With separate user_ids the two apps cannot touch the same row, ever. The constants below
+   are used ONLY for one-time read-only migration of data out of the old shared homes. */
 const SENTINEL = "2000-01-02";
-const SHARED_SENTINEL = "2000-01-01";
+const LEGACY_USER = "eggie";          // never written by this app
+const LEGACY_ROWS = ["2000-01-02","2000-01-01"];   // old oc-hub row, then the original shared row
 const OC_KEYS = ["ocs","ocLore","ocShips","ocArcs","ocIdeas","ocInspo","ocRpInfo","ocJournals","ocDesigns","ocStickies","ocLayouts","ocAppConfig"];
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : "id"+Math.random().toString(36).slice(2));
 
@@ -408,21 +409,11 @@ const DB = {
     return this._c[k]=n; },
   async saveDaily(date,fn){ if(RO&&DEMO){ const cur=demo.days[date]||{}; demo.days[date]=fn({...cur}); return demo.days[date]; }
     if(RO) return;
-    const prev=this._c["d"+date];
     const cur=await this.daily(date); const next=fn({...cur});
     this._c["d"+date]=next;            // optimistic: cache first → re-render is instant
-    /* auto-backup BEFORE the cloud write — even a failed save leaves a copy on this device */
-    if(date===SENTINEL){ try{ localStorage.setItem("oc-backup",JSON.stringify({t:Date.now(),data:next})); }catch(e){} }
-    let err=null;
-    try{ const r=await SB.from("daily_logs").upsert({user_id:UID,log_date:date,notes:JSON.stringify(next),
-      updated_at:new Date().toISOString()},{onConflict:"user_id,log_date"}); err=r&&r.error; }
-    catch(e){ err=e; }
-    if(err){
-      this._c["d"+date]=prev||cur;     // tell the truth: revert so the page matches the cloud
-      console.error("cloud save FAILED",err);
-      toast("⚠️ Couldn't save to the cloud — "+String(err.message||err.code||"network error").slice(0,90)+" — your data is auto-backed-up on this device 🌸");
-      return null;
-    }
+    await SB.from("daily_logs").upsert({user_id:UID,log_date:date,notes:JSON.stringify(next),
+      updated_at:new Date().toISOString()},{onConflict:"user_id,log_date"});
+    if(date===SENTINEL){ try{ localStorage.setItem("oc-backup",JSON.stringify({t:Date.now(),data:next})); }catch(e){} }   // auto-backup on this device, every save
     return next; },
 };
 /* every OC-hub mutation goes through here — all data lives on oc-prefixed sentinel keys */
@@ -816,55 +807,13 @@ function mbCardHTML(c){
 }
 async function refMut(fn){ const id=state.selOC; if(!id)return; await ocMut("ocs",a=>a.map(o=>o.id===id?{...o,refs:fn(o.refs||[])}:o)); }
 async function mbUpdate(cid,patch){ await refMut(r=>r.map(c=>c.id===cid?{...c,...patch}:c)); }
-/* real image hosting: uploads go to the Supabase Storage bucket "oc-images" and we keep
-   just the URL — the database row stays tiny no matter how much art she hoards. 🖼️
-   If the bucket doesn't exist yet, we fall back to embedding (and say so). */
-let _storageDown=null;
-async function uploadImage(dataUrl){
-  if(DEMO||!SB) return dataUrl;
-  try{
-    const blob=await (await fetch(dataUrl)).blob();
-    const path=UID+"/"+uid()+(blob.type==="image/png"?".png":".jpg");
-    const {error}=await SB.storage.from("oc-images").upload(path,blob,{contentType:blob.type||"image/jpeg",upsert:false});
-    if(error) throw error;
-    const {data}=SB.storage.from("oc-images").getPublicUrl(path);
-    if(data&&data.publicUrl){ _storageDown=null; return data.publicUrl; }
-    throw new Error("no public url");
-  }catch(e){
-    if(!_storageDown){ _storageDown=String(e.message||e); toast("Image hosting isn't set up yet (bucket “oc-images”) — embedding for now, which fills the database fast 🌸"); }
-    console.warn("storage upload failed — embedding instead",e);
-    return dataUrl;
-  }
-}
-/* uploaded photos → downscaled, then hosted (or embedded as fallback) */
+/* uploaded photos → downscaled data-URL so they persist in the DB (no CORS pain) */
 function mbFileToDataURL(file){ return new Promise((res,rej)=>{ const img=new Image(); const u=URL.createObjectURL(file);
   img.onload=()=>{ const MAX=900; let w=img.width,h=img.height; if(Math.max(w,h)>MAX){ const s=MAX/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
     const cv=document.createElement("canvas"); cv.width=w; cv.height=h; cv.getContext("2d").drawImage(img,0,0,w,h); URL.revokeObjectURL(u);
-    const png=(file.type==="image/png"); const dataUrl=cv.toDataURL(png?"image/png":"image/jpeg",0.82);
-    uploadImage(dataUrl).then(url=>res({url, ar:w/h})).catch(()=>res({url:dataUrl, ar:w/h})); };
+    const png=(file.type==="image/png"); res({url:cv.toDataURL(png?"image/png":"image/jpeg",0.82), ar:w/h}); };
   img.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error("couldn't read image")); };
   img.src=u; }); }
-/* one-time slimming: any image still embedded in the database gets uploaded to Storage
-   and swapped for its URL — shrinks the row back under every size limit */
-async function slimImages(){
-  if(DEMO||!SB)return;
-  try{
-    const cur=await DB.daily(SENTINEL);
-    if(JSON.stringify(cur).indexOf("data:image")<0)return;
-    toast("Tidying your images into proper hosting… 🧺");
-    async function walk(v){
-      if(typeof v==="string") return v.startsWith("data:image")?await uploadImage(v):v;
-      if(Array.isArray(v)){ const o=[]; for(const x of v)o.push(await walk(x)); return o; }
-      if(v&&typeof v==="object"){ const o={}; for(const k in v)o[k]=await walk(v[k]); return o; }
-      return v;
-    }
-    const out={};
-    for(const k of OC_KEYS){ if(cur[k]==null)continue; out[k]=(JSON.stringify(cur[k]).indexOf("data:image")>=0)?await walk(cur[k]):cur[k]; }
-    if(_storageDown){ return; }   // bucket missing — nothing gained by rewriting the same blob
-    const r=await DB.saveDaily(SENTINEL,n=>({...n,...out}));
-    if(r)toast("Images moved to proper hosting — the hub is light again ✨");
-  }catch(e){ console.error("slim",e); }
-}
 function mbWrapText(ctx,text,x,y,maxW,lh){ let yy=y; String(text).split("\n").forEach(para=>{ const words=para.split(/\s+/); let line=""; words.forEach(w=>{ const test=line?line+" "+w:w; if(ctx.measureText(test).width>maxW && line){ ctx.fillText(line,x,yy); line=w; yy+=lh; } else line=test; }); ctx.fillText(line,x,yy); yy+=lh; }); }
 async function exportBoardPNG(){
   const o=ocById(state.selOC); const boardEl=document.getElementById("ocBoard");
@@ -1344,13 +1293,8 @@ document.addEventListener("click",async(e)=>{
     let b=null; try{ b=JSON.parse(localStorage.getItem("oc-backup")||"null"); }catch(e){}
     if(!b||!b.data){ toast("No auto-backup on this device yet 🌸"); return; }
     if(!confirm("Restore everything from this device's auto-backup ("+new Date(b.t).toLocaleString()+")? This overwrites what's in the cloud with the backup."))return;
-    toast("Restoring… any embedded images get moved to proper hosting first 🧺");
-    async function walk(v){ if(typeof v==="string") return v.startsWith("data:image")?await uploadImage(v):v;
-      if(Array.isArray(v)){ const o=[]; for(const x of v)o.push(await walk(x)); return o; }
-      if(v&&typeof v==="object"){ const o={}; for(const k in v)o[k]=await walk(v[k]); return o; } return v; }
-    const slim={}; for(const k of OC_KEYS){ if(b.data[k]==null)continue; slim[k]=await walk(b.data[k]); }
-    const r=await DB.saveDaily(SENTINEL,n=>({...n,...slim}));
-    if(r)toast("Restored from backup ♻️💗"); return render(); }
+    await DB.saveDaily(SENTINEL,n=>{ const out={...n}; OC_KEYS.forEach(k=>{ if(b.data[k]!=null)out[k]=b.data[k]; }); return out; });
+    toast("Restored from backup ♻️💗"); return render(); }
 
   /* stickies */
   if(act==="addSticky"){ addSticky(""); return; }
@@ -1644,22 +1588,27 @@ document.addEventListener("pointercancel",()=>{ resizeSticky=null; });
 })();
 
 /* ===================== BOOT ===================== */
-/* one-time migration: pull any surviving OC data off the old shared row into our own */
+/* one-time migration: pull OC data out of the old homes (READ-ONLY on the legacy rows —
+   this app never writes anything under the main OS's user_id) */
 async function migrateFromShared(){
   if(DEMO||!SB)return;
   try{
     const cur=await DB.daily(SENTINEL);
-    if(OC_KEYS.some(k=>cur[k]!=null&&(!Array.isArray(cur[k])||cur[k].length)))return;   // our row already has data
-    const {data}=await SB.from("daily_logs").select("notes").eq("user_id",UID).eq("log_date",SHARED_SENTINEL).maybeSingle();
-    let old={}; try{ old=data&&data.notes?JSON.parse(data.notes):{}; }catch(e){}
-    const found=OC_KEYS.filter(k=>old[k]!=null);
-    if(!found.length)return;
-    await DB.saveDaily(SENTINEL,n=>{ const out={...n}; found.forEach(k=>{ if(out[k]==null)out[k]=old[k]; }); return out; });
-    toast("Moved your hub data to its own safe shelf 📦✨");
+    if(OC_KEYS.some(k=>cur[k]!=null&&(!Array.isArray(cur[k])||cur[k].length)))return;   // our own account already has data
+    let old=null, found=[];
+    for(const row of LEGACY_ROWS){
+      const {data}=await SB.from("daily_logs").select("notes").eq("user_id",LEGACY_USER).eq("log_date",row).maybeSingle();
+      let n={}; try{ n=data&&data.notes?JSON.parse(data.notes):{}; }catch(e){}
+      const f=OC_KEYS.filter(k=>n[k]!=null);
+      if(f.length){ old=n; found=f; break; }
+    }
+    if(!old)return;
+    const r=await DB.saveDaily(SENTINEL,n=>{ const out={...n}; found.forEach(k=>{ if(out[k]==null)out[k]=old[k]; }); return out; });
+    if(r)toast("Hub data moved to its own account — fully separate from the main OS 📦✨");
   }catch(e){ console.error("migrate",e); }
 }
 applySettings();
-migrateFromShared().then(()=>slimImages()).finally(render);
+migrateFromShared().finally(render);
 if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("sw.js").catch(function(){}); }catch(e){} }
 </script>
 <!-- ===================== PET WIDGET (Eugene visits the OC hub too) ===================== -->
