@@ -325,7 +325,12 @@ let RO = CONFIG.readOnly || DEMO;
 const SB = (!DEMO && window.supabase) ? window.supabase.createClient(CONFIG.url, CONFIG.anonKey) : null;
 const UID = CONFIG.userId;
 const TODAY = new Date().toLocaleDateString("en-CA");
-const SENTINEL = "2000-01-01";
+/* OC Hub's OWN storage row. The main OS reads/writes "2000-01-01" as a whole blob,
+   so sharing it meant a stale Eggie-OS tab could overwrite OC data (it did, once).
+   "2000-01-02" belongs to this hub alone — the two apps can never clobber each other again. */
+const SENTINEL = "2000-01-02";
+const SHARED_SENTINEL = "2000-01-01";
+const OC_KEYS = ["ocs","ocLore","ocShips","ocArcs","ocIdeas","ocInspo","ocRpInfo","ocJournals","ocDesigns","ocStickies","ocLayouts","ocAppConfig"];
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : "id"+Math.random().toString(36).slice(2));
 
 /* ===================== CONSTANTS ===================== */
@@ -404,6 +409,7 @@ const DB = {
     this._c["d"+date]=next;            // optimistic: cache first → re-render is instant
     await SB.from("daily_logs").upsert({user_id:UID,log_date:date,notes:JSON.stringify(next),
       updated_at:new Date().toISOString()},{onConflict:"user_id,log_date"});
+    if(date===SENTINEL){ try{ localStorage.setItem("oc-backup",JSON.stringify({t:Date.now(),data:next})); }catch(e){} }   // auto-backup on this device, every save
     return next; },
 };
 /* every OC-hub mutation goes through here — all data lives on oc-prefixed sentinel keys */
@@ -1114,8 +1120,8 @@ function renderSettings(){
       <p class="soft" style="font-size:11.5px;margin:10px 0 0">Lock keeps cards from wiggling while you tap · reset puts every page back to its defaults.</p>
     </div>
     <div class="sheet-box"><h4>💾 Data</h4>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" data-act="exportData">⬇️ export all my OC data (backup)</button><span class="chip ${DEMO?'demo':'on'}">${DEMO?'demo data':'● live · synced'}</span></div>
-      <p class="soft" style="font-size:11.5px;margin:10px 0 0">Shares the main OS's Supabase project — all hub data lives under oc-prefixed keys, so the two never collide. ${DEMO?"Connect Supabase keys in CONFIG to go live.":"Connected & syncing."}</p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" data-act="exportData">⬇️ export all my OC data (backup)</button><button class="btn" data-act="restoreBackup" ${RO?"disabled":""}>♻️ restore this device's auto-backup</button><span class="chip ${DEMO?'demo':'on'}">${DEMO?'demo data':'● live · synced'}</span></div>
+      <p class="soft" style="font-size:11.5px;margin:10px 0 0">Your hub keeps its own private database row (the main OS can't touch it), and every save also keeps an automatic backup on this device. ${(()=>{ try{ const b=JSON.parse(localStorage.getItem("oc-backup")||"null"); return b? "Last auto-backup here: "+new Date(b.t).toLocaleString()+"." : "No auto-backup on this device yet — it appears after your first save."; }catch(e){ return ""; } })()}</p>
     </div>
   </div>`;
 }
@@ -1143,7 +1149,7 @@ function renderStickies(){
 }
 
 /* ===================== EVENTS (one dispatcher for everything) ===================== */
-const WRITE_ACTS=["addOC","saveOC","delOC","editOC","mbAddImage","mbAddNote","mbAddColor","mbDel","mbUpload","loreNew","saveLore","loreDel","loreEdit","loreLink","addArc","arcStage","arcLink","beatAdd","beatDone","beatDel","arcDel","shipNew","saveShip","shipEdit","shipDel","ocIdeaAdd","ocIdeaDel","ideaToArc","ocInspoAdd","ocInspoDel","ocInspoDone","homeIdeaAdd","homeMin","homeHide","cardToggle","resetLayout","saveConfig","addSticky","delSticky","stickyColor","triviaAdd","triviaDel","ownAdd","ownDel","galAddUrl","galDel","galUpload","setPfp","setBanner","galDelG","pfpUpload","pfpClear","sheetPfp","sheetBanner","rpSave","jrNew","jrEdit","jrLink","saveJr","jrDel","dgNew","dgEdit","dgUpload","dgMultiUpload","dgCover","dgImgDel","saveDg","dgDel","dgPromote"];
+const WRITE_ACTS=["addOC","saveOC","delOC","editOC","mbAddImage","mbAddNote","mbAddColor","mbDel","mbUpload","loreNew","saveLore","loreDel","loreEdit","loreLink","addArc","arcStage","arcLink","beatAdd","beatDone","beatDel","arcDel","shipNew","saveShip","shipEdit","shipDel","ocIdeaAdd","ocIdeaDel","ideaToArc","ocInspoAdd","ocInspoDel","ocInspoDone","homeIdeaAdd","homeMin","homeHide","cardToggle","resetLayout","saveConfig","addSticky","delSticky","stickyColor","triviaAdd","triviaDel","ownAdd","ownDel","galAddUrl","galDel","galUpload","setPfp","setBanner","galDelG","pfpUpload","pfpClear","sheetPfp","sheetBanner","rpSave","jrNew","jrEdit","jrLink","saveJr","jrDel","dgNew","dgEdit","dgUpload","dgMultiUpload","dgCover","dgImgDel","saveDg","dgDel","dgPromote","restoreBackup"];
 document.addEventListener("click",async(e)=>{
   const el=e.target.closest("[data-act]"); if(!el)return; const act=el.dataset.act, id=el.dataset.id;
   if(RO && WRITE_ACTS.includes(act)){ toast("Demo mode — connect Supabase to save 🌸"); return; }
@@ -1279,6 +1285,12 @@ document.addEventListener("click",async(e)=>{
   if(act==="setText"){ localStorage.setItem("oc-text",localStorage.getItem("oc-text")==="1"?"0":"1"); applySettings(); return render(); }
   if(act==="saveConfig"){ const cfg={ mainOs:document.getElementById("cf_mainos").value.trim(), creator:{ name:document.getElementById("cf_name").value.trim()||"Eggie", emoji:document.getElementById("cf_emoji").value.trim()||"🦄" } }; await ocSet("ocAppConfig",cfg); mergeCfg(cfg); toast("Saved 💗"); return render(); }
   if(act==="exportData")return exportData();
+  if(act==="restoreBackup"){
+    let b=null; try{ b=JSON.parse(localStorage.getItem("oc-backup")||"null"); }catch(e){}
+    if(!b||!b.data){ toast("No auto-backup on this device yet 🌸"); return; }
+    if(!confirm("Restore everything from this device's auto-backup ("+new Date(b.t).toLocaleString()+")? This overwrites what's in the cloud with the backup."))return;
+    await DB.saveDaily(SENTINEL,n=>{ const out={...n}; OC_KEYS.forEach(k=>{ if(b.data[k]!=null)out[k]=b.data[k]; }); return out; });
+    toast("Restored from backup ♻️💗"); return render(); }
 
   /* stickies */
   if(act==="addSticky"){ addSticky(""); return; }
@@ -1572,8 +1584,22 @@ document.addEventListener("pointercancel",()=>{ resizeSticky=null; });
 })();
 
 /* ===================== BOOT ===================== */
+/* one-time migration: pull any surviving OC data off the old shared row into our own */
+async function migrateFromShared(){
+  if(DEMO||!SB)return;
+  try{
+    const cur=await DB.daily(SENTINEL);
+    if(OC_KEYS.some(k=>cur[k]!=null&&(!Array.isArray(cur[k])||cur[k].length)))return;   // our row already has data
+    const {data}=await SB.from("daily_logs").select("notes").eq("user_id",UID).eq("log_date",SHARED_SENTINEL).maybeSingle();
+    let old={}; try{ old=data&&data.notes?JSON.parse(data.notes):{}; }catch(e){}
+    const found=OC_KEYS.filter(k=>old[k]!=null);
+    if(!found.length)return;
+    await DB.saveDaily(SENTINEL,n=>{ const out={...n}; found.forEach(k=>{ if(out[k]==null)out[k]=old[k]; }); return out; });
+    toast("Moved your hub data to its own safe shelf 📦✨");
+  }catch(e){ console.error("migrate",e); }
+}
 applySettings();
-render();
+migrateFromShared().finally(render);
 if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("sw.js").catch(function(){}); }catch(e){} }
 </script>
 <!-- ===================== PET WIDGET (Eugene visits the OC hub too) ===================== -->
