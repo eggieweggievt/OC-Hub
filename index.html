@@ -405,11 +405,21 @@ const DB = {
     return this._c[k]=n; },
   async saveDaily(date,fn){ if(RO&&DEMO){ const cur=demo.days[date]||{}; demo.days[date]=fn({...cur}); return demo.days[date]; }
     if(RO) return;
+    const prev=this._c["d"+date];
     const cur=await this.daily(date); const next=fn({...cur});
     this._c["d"+date]=next;            // optimistic: cache first → re-render is instant
-    await SB.from("daily_logs").upsert({user_id:UID,log_date:date,notes:JSON.stringify(next),
-      updated_at:new Date().toISOString()},{onConflict:"user_id,log_date"});
-    if(date===SENTINEL){ try{ localStorage.setItem("oc-backup",JSON.stringify({t:Date.now(),data:next})); }catch(e){} }   // auto-backup on this device, every save
+    /* auto-backup BEFORE the cloud write — even a failed save leaves a copy on this device */
+    if(date===SENTINEL){ try{ localStorage.setItem("oc-backup",JSON.stringify({t:Date.now(),data:next})); }catch(e){} }
+    let err=null;
+    try{ const r=await SB.from("daily_logs").upsert({user_id:UID,log_date:date,notes:JSON.stringify(next),
+      updated_at:new Date().toISOString()},{onConflict:"user_id,log_date"}); err=r&&r.error; }
+    catch(e){ err=e; }
+    if(err){
+      this._c["d"+date]=prev||cur;     // tell the truth: revert so the page matches the cloud
+      console.error("cloud save FAILED",err);
+      toast("⚠️ Couldn't save to the cloud — "+String(err.message||err.code||"network error").slice(0,90)+" — your data is auto-backed-up on this device 🌸");
+      return null;
+    }
     return next; },
 };
 /* every OC-hub mutation goes through here — all data lives on oc-prefixed sentinel keys */
@@ -803,13 +813,55 @@ function mbCardHTML(c){
 }
 async function refMut(fn){ const id=state.selOC; if(!id)return; await ocMut("ocs",a=>a.map(o=>o.id===id?{...o,refs:fn(o.refs||[])}:o)); }
 async function mbUpdate(cid,patch){ await refMut(r=>r.map(c=>c.id===cid?{...c,...patch}:c)); }
-/* uploaded photos → downscaled data-URL so they persist in the DB (no CORS pain) */
+/* real image hosting: uploads go to the Supabase Storage bucket "oc-images" and we keep
+   just the URL — the database row stays tiny no matter how much art she hoards. 🖼️
+   If the bucket doesn't exist yet, we fall back to embedding (and say so). */
+let _storageDown=null;
+async function uploadImage(dataUrl){
+  if(DEMO||!SB) return dataUrl;
+  try{
+    const blob=await (await fetch(dataUrl)).blob();
+    const path=UID+"/"+uid()+(blob.type==="image/png"?".png":".jpg");
+    const {error}=await SB.storage.from("oc-images").upload(path,blob,{contentType:blob.type||"image/jpeg",upsert:false});
+    if(error) throw error;
+    const {data}=SB.storage.from("oc-images").getPublicUrl(path);
+    if(data&&data.publicUrl){ _storageDown=null; return data.publicUrl; }
+    throw new Error("no public url");
+  }catch(e){
+    if(!_storageDown){ _storageDown=String(e.message||e); toast("Image hosting isn't set up yet (bucket “oc-images”) — embedding for now, which fills the database fast 🌸"); }
+    console.warn("storage upload failed — embedding instead",e);
+    return dataUrl;
+  }
+}
+/* uploaded photos → downscaled, then hosted (or embedded as fallback) */
 function mbFileToDataURL(file){ return new Promise((res,rej)=>{ const img=new Image(); const u=URL.createObjectURL(file);
   img.onload=()=>{ const MAX=900; let w=img.width,h=img.height; if(Math.max(w,h)>MAX){ const s=MAX/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
     const cv=document.createElement("canvas"); cv.width=w; cv.height=h; cv.getContext("2d").drawImage(img,0,0,w,h); URL.revokeObjectURL(u);
-    const png=(file.type==="image/png"); res({url:cv.toDataURL(png?"image/png":"image/jpeg",0.82), ar:w/h}); };
+    const png=(file.type==="image/png"); const dataUrl=cv.toDataURL(png?"image/png":"image/jpeg",0.82);
+    uploadImage(dataUrl).then(url=>res({url, ar:w/h})).catch(()=>res({url:dataUrl, ar:w/h})); };
   img.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error("couldn't read image")); };
   img.src=u; }); }
+/* one-time slimming: any image still embedded in the database gets uploaded to Storage
+   and swapped for its URL — shrinks the row back under every size limit */
+async function slimImages(){
+  if(DEMO||!SB)return;
+  try{
+    const cur=await DB.daily(SENTINEL);
+    if(JSON.stringify(cur).indexOf("data:image")<0)return;
+    toast("Tidying your images into proper hosting… 🧺");
+    async function walk(v){
+      if(typeof v==="string") return v.startsWith("data:image")?await uploadImage(v):v;
+      if(Array.isArray(v)){ const o=[]; for(const x of v)o.push(await walk(x)); return o; }
+      if(v&&typeof v==="object"){ const o={}; for(const k in v)o[k]=await walk(v[k]); return o; }
+      return v;
+    }
+    const out={};
+    for(const k of OC_KEYS){ if(cur[k]==null)continue; out[k]=(JSON.stringify(cur[k]).indexOf("data:image")>=0)?await walk(cur[k]):cur[k]; }
+    if(_storageDown){ return; }   // bucket missing — nothing gained by rewriting the same blob
+    const r=await DB.saveDaily(SENTINEL,n=>({...n,...out}));
+    if(r)toast("Images moved to proper hosting — the hub is light again ✨");
+  }catch(e){ console.error("slim",e); }
+}
 function mbWrapText(ctx,text,x,y,maxW,lh){ let yy=y; String(text).split("\n").forEach(para=>{ const words=para.split(/\s+/); let line=""; words.forEach(w=>{ const test=line?line+" "+w:w; if(ctx.measureText(test).width>maxW && line){ ctx.fillText(line,x,yy); line=w; yy+=lh; } else line=test; }); ctx.fillText(line,x,yy); yy+=lh; }); }
 async function exportBoardPNG(){
   const o=ocById(state.selOC); const boardEl=document.getElementById("ocBoard");
@@ -1289,8 +1341,13 @@ document.addEventListener("click",async(e)=>{
     let b=null; try{ b=JSON.parse(localStorage.getItem("oc-backup")||"null"); }catch(e){}
     if(!b||!b.data){ toast("No auto-backup on this device yet 🌸"); return; }
     if(!confirm("Restore everything from this device's auto-backup ("+new Date(b.t).toLocaleString()+")? This overwrites what's in the cloud with the backup."))return;
-    await DB.saveDaily(SENTINEL,n=>{ const out={...n}; OC_KEYS.forEach(k=>{ if(b.data[k]!=null)out[k]=b.data[k]; }); return out; });
-    toast("Restored from backup ♻️💗"); return render(); }
+    toast("Restoring… any embedded images get moved to proper hosting first 🧺");
+    async function walk(v){ if(typeof v==="string") return v.startsWith("data:image")?await uploadImage(v):v;
+      if(Array.isArray(v)){ const o=[]; for(const x of v)o.push(await walk(x)); return o; }
+      if(v&&typeof v==="object"){ const o={}; for(const k in v)o[k]=await walk(v[k]); return o; } return v; }
+    const slim={}; for(const k of OC_KEYS){ if(b.data[k]==null)continue; slim[k]=await walk(b.data[k]); }
+    const r=await DB.saveDaily(SENTINEL,n=>({...n,...slim}));
+    if(r)toast("Restored from backup ♻️💗"); return render(); }
 
   /* stickies */
   if(act==="addSticky"){ addSticky(""); return; }
@@ -1599,7 +1656,7 @@ async function migrateFromShared(){
   }catch(e){ console.error("migrate",e); }
 }
 applySettings();
-migrateFromShared().finally(render);
+migrateFromShared().then(()=>slimImages()).finally(render);
 if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("sw.js").catch(function(){}); }catch(e){} }
 </script>
 <!-- ===================== PET WIDGET (Eugene visits the OC hub too) ===================== -->
