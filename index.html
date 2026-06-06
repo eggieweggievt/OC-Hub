@@ -34,8 +34,11 @@
     --r:18px; --sans:"Quicksand",ui-rounded,"SF Pro Rounded",system-ui,sans-serif; --display:"Fredoka",var(--sans);
   }
   *{box-sizing:border-box;} html,body{margin:0;padding:0;}
-  /* never let a stray wide element widen the page — keeps `main` truly centered (iPad portrait fix) */
-  html,body{width:100%;max-width:100%;overflow-x:hidden;}
+  /* never let a stray wide element widen the page — keeps `main` truly centered (iPad portrait fix).
+     html is the REAL scroller (overflow-x:hidden); body uses CLIP, which is NOT a scroll container —
+     otherwise body + overscroll-behavior swallows mouse-wheel scrolling on Windows. */
+  html{width:100%;max-width:100%;overflow-x:hidden;}
+  body{width:100%;max-width:100%;overflow-x:clip;}
   main{overflow-x:clip;}
   body{background:var(--bg);background-image:radial-gradient(80% 50% at 100% 0%,#fbdff0 0%,transparent 60%),radial-gradient(70% 50% at 0% 0%,#ddeafc 0%,transparent 55%),radial-gradient(60% 40% at 50% 100%,#efe6fb 0%,transparent 60%);background-attachment:fixed;color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;font-weight:500;-webkit-font-smoothing:antialiased;min-height:100vh;}
   /* her unicorn-sky art, muted, behind everything */
@@ -266,7 +269,7 @@
   }
   /* ---- native-app feel ---- */
   *{-webkit-tap-highlight-color:transparent;}
-  body{overscroll-behavior-y:none;}            /* no whole-page rubber-band */
+  html{overscroll-behavior-y:none;}            /* no whole-page rubber-band — on the real scroller so wheel chaining stays alive */
   nav,.kanban{overscroll-behavior-x:contain;}  /* inner swipes don't yank the page */
   .btn,.chip,.chiptog,.hbtn,.seg>button,.check,.pill,.tab{touch-action:manipulation;}  /* no dbl-tap-zoom delay (drag handles keep touch-action:none) */
   #nav .tab{touch-action:pan-x;}               /* re-assert after the manipulation rule above */
